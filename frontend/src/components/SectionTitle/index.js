@@ -1,6 +1,5 @@
 import React from 'react';
 
-
 import lineImg from '../../assets/images/line.png';
 
 const SectionTitle = (props) => {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Table, Tag, Spin, Typography, Button, Card, Space } from "antd";
 import moment from "moment";
 import axios from "axios";
-import { useParams, useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { DownloadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
@@ -11,8 +11,9 @@ import config from "../config";
 const { Title, Text } = Typography;
 
 const QuizResultTable = () => {
-  const { userId, quizId } = useParams();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { userId, quizId  } = router.query;;
+  const router = useRouter();
   const [data, setData] = useState([]);
   const [bestAttempt, setBestAttempt] = useState(null);
   const [questionParts, setQuestionParts] = useState([]);
@@ -230,7 +231,7 @@ const QuizResultTable = () => {
               )}
             </div>
             <Space>
-              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+              <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
                 Back
               </Button>
               <Button

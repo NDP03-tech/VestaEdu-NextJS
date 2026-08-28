@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import courseImg1 from "../../assets/images/course/1.png";
 import "./SingleCourseCustom.css";
 
@@ -27,7 +27,7 @@ const SingleCourseThreeCustom = (props) => {
     <div className={itemClass ? itemClass : "scc-outer"}>
       <div className="scc-card">
         {/* ── Thumbnail ── */}
-        <Link to={`/course/${courseID}`} className="scc-thumb">
+        <Link href={`/course/${courseID}`} className="scc-thumb">
           <img src={courseImg || courseImg1} alt={courseTitle || "Course"} />
           <div className="scc-thumb-overlay">
             <span className="scc-play-ring">
@@ -50,7 +50,7 @@ const SingleCourseThreeCustom = (props) => {
         <div className="scc-body">
           {/* Title */}
           <h4 className="scc-title">
-            <Link to={`/course/${courseID}`}>
+            <Link href={`/course/${courseID}`}>
               {courseTitle || "The Most Complete Design Thinking Course"}
             </Link>
           </h4>
@@ -141,7 +141,7 @@ const SingleCourseThreeCustom = (props) => {
                 {isFree ? "Miễn phí" : coursePrice}
               </span>
             </div>
-            <Link to={`/course/${courseID}`} className="scc-btn">
+            <Link href={`/course/${courseID}`} className="scc-btn">
               Đăng ký
               <svg
                 width="13"

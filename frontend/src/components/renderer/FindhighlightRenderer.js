@@ -386,7 +386,6 @@ const FindHighlightRenderer = ({
         ></Card>
       )}
 
-  
       <style jsx>{`
         ::selection {
           background-color: ${editable ? "#bae7ff" : "transparent"};

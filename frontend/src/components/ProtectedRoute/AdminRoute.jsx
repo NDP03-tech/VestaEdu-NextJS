@@ -1,5 +1,4 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
 
 const AdminRoute = ({ isLoggedIn }) => {
   const role = localStorage.getItem('role');

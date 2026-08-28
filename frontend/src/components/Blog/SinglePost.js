@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import blogImg1 from "../../assets/images/blog/1.jpg";
 
 const SinglePost = (props) => {
@@ -19,7 +19,7 @@ const SinglePost = (props) => {
       } h-full flex flex-col justify-between`}
     >
       <div className="blog__thumb w-img p-relative">
-        <Link to={`/blog/${blogID}`} className="blog__thumb--image">
+        <Link href={`/blog/${blogID}`} className="blog__thumb--image">
           <img src={blogImage} alt={blogTitle || "Blog"} />
         </Link>
         <em className="b_date">
@@ -32,7 +32,7 @@ const SinglePost = (props) => {
             {blogCategory ? blogCategory : "Education"}
           </span>
           <h3 className="blog__card--title">
-            <Link to={`/blog/${blogID}`}>
+            <Link href={`/blog/${blogID}`}>
               {" "}
               {blogTitle ? blogTitle : "How to growing your business"}
             </Link>

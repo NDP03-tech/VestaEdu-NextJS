@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import QuizInfo from "./QuizInfo/QuizInfo";
 import QuestionFormTest from "./QuestionForm/QuestionFormTest";
 import config from "../config";
 import "./QuizBuilder.css";
 
 const QuizBuilder = () => {
-  const { quizId } = useParams();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { quizId  } = router.query;;
+  const router = useRouter();
 
   const [quizInfo, setQuizInfo] = useState({});
   const [questions, setQuestions] = useState([]);
@@ -32,7 +33,7 @@ const QuizBuilder = () => {
       } catch (err) {
         console.error("❌ Error fetching data:", err);
         alert("Failed to load quiz data.");
-        navigate("/quiz-manage");
+        router.push("/quiz-manage");
       } finally {
         setLoading(false);
       }
@@ -187,7 +188,7 @@ const QuizBuilder = () => {
         <div className="header-content">
           <button
             className="btn btn-outline-light btn-sm back-btn"
-            onClick={() => navigate("/quiz-manage")}
+            onClick={() => router.push("/quiz-manage")}
           >
             ← Back to Quiz List
           </button>
@@ -276,14 +277,14 @@ const QuizBuilder = () => {
 
               <button
                 className="btn btn-outline-secondary"
-                onClick={() => navigate("/quiz-manage")}
+                onClick={() => router.push("/quiz-manage")}
               >
                 Cancel
               </button>
 
               <button
                 className="btn btn-info"
-                onClick={() => navigate(`/user/do-quiz/${quizId}`)}
+                onClick={() => router.push(`/user/do-quiz/${quizId}`)}
               >
                 <span className="me-2">👁️</span>
                 Preview Quiz

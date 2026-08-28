@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const formatDateVN = (dateString) => {
   if (!dateString) return "";
@@ -43,7 +43,7 @@ const Breadcrumb = (props) => {
         <div className="breadcrumbs-inner">
           <div className="container">
             <div className="breadcrumbs-text">
-              <Link to="#" className="cate">
+              <Link href="#" className="cate">
                 {postCategory}
               </Link>
 

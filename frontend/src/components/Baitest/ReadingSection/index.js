@@ -146,8 +146,6 @@ const ReadingSection = ({setBandScore}) => {
     setIsSubmitted(true);
   };
 
-
-
   return (
     <div className="container mt-5">
   <p className="bg-warning text-center" style={{ fontSize: '36px', fontFamily: 'Helvetica' }}>

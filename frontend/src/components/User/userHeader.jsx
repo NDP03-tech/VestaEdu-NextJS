@@ -13,23 +13,23 @@ import {
 const { Header } = Layout;
 
 const UserHeader = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/login");
+    router.push("/login");
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => router.pathname === path;
 
   const userMenuItems = [
     {
       key: "profile",
       icon: <User size={16} />,
       label: "My Profile",
-      onClick: () => navigate("/user/profile"),
+      onClick: () => router.push("/user/profile"),
     },
     {
       type: "divider",

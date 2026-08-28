@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/router";
 
 const MenuItems = (props) => {
   const { parentMenu } = props;
-  const location = useLocation();
-  const postURL = location.pathname.split("/");
+  const router = useRouter();
+  const postURL = router.pathname.split("/");
   const pathLength = Number(postURL.length);
 
   const [page, setPage] = useState(false);
@@ -39,7 +40,7 @@ const MenuItems = (props) => {
         </Link>
         <ul className={page ? "sub-menu sub-menu-open" : "sub-menu"}>
           {/* Home - Là con của Pages */}
-          <li className={location.pathname === "/" ? "menu-active" : ""}>
+          <li className={router.pathname === "/" ? "menu-active" : ""}>
             <Link
               to="/"
               className="hash"
@@ -48,21 +49,21 @@ const MenuItems = (props) => {
               Home
             </Link>
           </li>
-          <li className={location.pathname === "/about" ? "menu-active" : ""}>
-            <Link to="/about">About</Link>
+          <li className={router.pathname === "/about" ? "menu-active" : ""}>
+            <Link href="/about">About</Link>
           </li>
           <li
             className={
               postURL[1] === "instructor" && pathLength > 2 ? "menu-active" : ""
             }
           >
-            <Link to="/instructor/1">Profile</Link>
+            <Link href="/instructor/1">Profile</Link>
           </li>
-          <li className={location.pathname === "/event" ? "menu-active" : ""}>
-            <Link to="/event">Event</Link>
+          <li className={router.pathname === "/event" ? "menu-active" : ""}>
+            <Link href="/event">Event</Link>
           </li>
-          <li className={location.pathname === "/blog" ? "menu-active" : ""}>
-            <Link to="/blog">Blog</Link>
+          <li className={router.pathname === "/blog" ? "menu-active" : ""}>
+            <Link href="/blog">Blog</Link>
           </li>
         </ul>
       </li>
@@ -102,10 +103,10 @@ const MenuItems = (props) => {
       </li>
 
       {/* Login - Không có mũi tên */}
-      <li className={location.pathname === "/login" ? "menu-active" : ""}>
-        <Link to="/login">Login</Link>
+      <li className={router.pathname === "/login" ? "menu-active" : ""}>
+        <Link href="/login">Login</Link>
       </li>
-      <li className={location.pathname === "/test" ? "menu-active" : ""}>
+      <li className={router.pathname === "/test" ? "menu-active" : ""}>
         <a href="/test" target="_blank" rel="noopener noreferrer">
           Test
         </a>

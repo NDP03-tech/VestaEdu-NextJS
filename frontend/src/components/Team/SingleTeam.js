@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from "next/link";
 
 const SingleTeam = (props) => {
     const { teamClass, Image, Title, Designation } = props;
@@ -25,7 +25,7 @@ const SingleTeam = (props) => {
 
                 <div className="ras-team-info">
                     <h4 className="ras-team-name">
-                        <Link to='/team/team-details'>
+                        <Link href='/team/team-details'>
                             {Title ? Title : 'Emiley Philifs'}
                         </Link>
                     </h4>

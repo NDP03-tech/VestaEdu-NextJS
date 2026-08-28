@@ -149,7 +149,6 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
             }
           },
           
-          
         // ** Cấu hình upload ảnh **
         images_upload_url: `${config.API_URL}/api/upload-media`,
  // URL backend upload ảnh
@@ -175,9 +174,6 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
     });
 },
 
-
-
-
         setup: function (editor) {
           editor.on('Paste PostProcess', () => {
             setTimeout(() => convertOldClozeDropLinks(editor.getBody()), 10);
@@ -191,8 +187,6 @@ const RichTextEditor = ({ value, onChange, onCreateGap, onCreateMultipleGap, onD
             setTimeout(() => convertOldClozeDropLinks(editor.getBody()), 10);
           });
 
-          
-        
           editor.ui.registry.addMenuButton('dropdownButton', {
             text: 'Dropdown',
             fetch: (callback) => {
