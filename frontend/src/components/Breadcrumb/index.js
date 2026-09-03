@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from "next/link";
+import { Link } from 'react-router-dom';
 
 import breadcrumbsImg from '../../assets/images/breadcrumbs/1.jpg'
 
@@ -17,7 +17,7 @@ const Breadcrumb = (props) => {
 							<h1 className="breadcrumbs-title">{pageTitle ? pageTitle : 'BreadCrumbs'}</h1>
 							<div className="back-nav">
 								<ul>
-									<li><Link href="/">Home</Link></li>
+									<li><Link to="/">Home</Link></li>
 									<li>{pageTitle ? pageTitle : 'BreadCrumbs'}</li>
 								</ul>
 							</div>
@@ -30,3 +30,7 @@ const Breadcrumb = (props) => {
 }
 
 export default Breadcrumb;
+
+
+
+

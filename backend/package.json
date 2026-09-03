@@ -23,7 +23,7 @@
     "call-bind-apply-helpers": "^1.0.2",
     "call-bound": "^1.0.4",
     "chokidar": "^3.6.0",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.11.0",
     "cloudinary-core": "^2.13.1",
     "concat-map": "^0.0.1",
     "concat-stream": "^1.6.2",
@@ -36,19 +36,21 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.6.2",
     "helmet": "^8.3.0",
-    "ioredis": "^5.6.1",
+    "ioredis": "^5.11.1",
     "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.1",
     "multer": "^1.4.5-lts.2",
-    "pg": "^8.16.3",
+    "nodemailer": "^9.1.1",
+    "pg": "^8.23.0",
     "pg-hstore": "^2.3.4",
-    "nodemailer": "^7.0.3",
+    "reflect-metadata": "^0.2.2",
     "resend": "^4.5.2",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
     "socket.io": "^4.8.1",
-    "tinymce": "^7.8.0"
+    "tinymce": "^7.8.0",
+    "typeorm": "^1.1.1"
   },
   "scripts": {
     "start": "node index.js",
@@ -62,6 +64,8 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/ioredis": "^4.28.10",
+    "@types/node": "^26.4.1",
     "nodemon": "^3.1.10"
   }
 }

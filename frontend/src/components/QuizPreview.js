@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useParams, useNavigate } from "react-router-dom";
 import quizService from "../services/quizService";
 import config from "../config";
 
@@ -8,8 +8,7 @@ import QuizRunner from "../components/QuizUI/QuizRunner";
 import QuizSubmitScreen from "../components/QuizUI/QuizSubmitScreen";
 
 const QuizPreviewWrapper = () => {
-  const router = useRouter();
-  const { quizId  } = router.query;;
+  const { quizId } = useParams();
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [hasStarted, setHasStarted] = useState(false);
@@ -17,7 +16,7 @@ const QuizPreviewWrapper = () => {
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [attemptNumber, setAttemptNumber] = useState(1);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setQuiz(null);
@@ -51,7 +50,7 @@ const QuizPreviewWrapper = () => {
           setAttemptNumber(data.attemptNumber || 1);
         } else if (data?.completed && data.result?.passed) {
           alert("Bạn đã hoàn thành bài này và đạt yêu cầu. Không thể làm lại.");
-          router.push("/user");
+          navigate("/user");
         }
       } catch (err) {
         console.error("❌ Lỗi khi tải dữ liệu:", err);
@@ -128,7 +127,7 @@ const QuizPreviewWrapper = () => {
       setHasSubmitted(true);
 
       if (resultData.result?.passed) {
-        router.push("/user");
+        navigate("/user");
       }
     } catch (err) {
       console.error("❌ Lỗi khi nộp bài:", err);

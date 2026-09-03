@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import defaultCourseImg from "../../assets/images/course/1.jpg";
 import defaultAuthorImg from "../../assets/images/course/1.jpg";
 import "./SingleCourseList.css";
@@ -32,7 +32,7 @@ const SingleCourseList = (props) => {
       <div className="scl-card">
         {/* ── Image Panel ── */}
         <div className="scl-image-wrap">
-          <Link href={`/course/${courseID}`} className="scl-img-link">
+          <Link to={`/course/${courseID}`} className="scl-img-link">
             <img
               src={courseImg ? courseImageUrl : defaultCourseImg}
               alt={courseTitle || "Course"}
@@ -47,7 +47,7 @@ const SingleCourseList = (props) => {
         <div className="scl-content">
           {/* Title */}
           <h4 className="scl-title">
-            <Link href={`/course/${courseID}`}>
+            <Link to={`/course/${courseID}`}>
               {courseTitle ||
                 "The Most Complete Design Thinking Course On The Market."}
             </Link>

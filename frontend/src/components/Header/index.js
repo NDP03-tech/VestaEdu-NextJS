@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import MenuItems from "./MenuItems";
 import normalLogo from "../../assets/images/logos/logo-ngang.png";
 import stickyLogo from "../../assets/images/logos/logo-ngang.png";
@@ -108,7 +108,7 @@ const Header = (props) => {
               <nav>
                 <div className="menu-toggle">
                   <div className="logo">
-                    <Link href="/" className="logo-text">
+                    <Link to="/" className="logo-text">
                       <img
                         src={isSticky ? stickyLogo : normalLogo}
                         alt="Vesta Academy"

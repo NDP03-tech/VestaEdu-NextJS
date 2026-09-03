@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from 'react-router-dom';
 
 import errorImg from '../../assets/images/404.png'
 

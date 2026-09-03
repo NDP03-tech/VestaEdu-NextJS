@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 import blogImg1 from "../../assets/images/blog/1.jpg";
 
@@ -15,7 +15,7 @@ const SingleBlog = (props) => {
   return (
     <div className={blogClass ? blogClass : "blog__card mb-50"}>
       <div className="blog__thumb w-img p-relative">
-        <Link href={`/blog/${blogID}`} className="blog__thumb--image">
+        <Link to={`/blog/${blogID}`} className="blog__thumb--image">
           <img
             src={blogImage ? `${blogImage}` : `${blogImg1}`}
             alt={blogTitle}
@@ -31,7 +31,7 @@ const SingleBlog = (props) => {
             {blogCategory ? blogCategory : "Education"}
           </span>
           <h3 className="blog__card--title">
-            <Link href={`/blog/${blogID}`}>
+            <Link to={`/blog/${blogID}`}>
               {" "}
               {blogTitle ? blogTitle : "How to growing your business"}
             </Link>

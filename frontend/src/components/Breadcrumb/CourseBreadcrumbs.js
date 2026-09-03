@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import "./Breadcrumb.css";
 
 const Breadcrumb = (props) => {
@@ -28,7 +28,7 @@ const Breadcrumb = (props) => {
             <div className="breadcrumbs-text">
               {/* Category pill */}
               {courseName && (
-                <Link href="#" className="cate">
+                <Link to="#" className="cate">
                   {courseName}
                 </Link>
               )}

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from 'react-router-dom';
 
 const ComingSoon = () => {
 	return (
@@ -11,7 +11,7 @@ const ComingSoon = () => {
                             Stay Connected
                         </h2>
                         <div className="btn-part">
-                            <Link href="/">
+                            <Link to="/">
                                 <a className="readon orange-btn main-home">Back To Homepage</a>
                             </Link>
                         </div>

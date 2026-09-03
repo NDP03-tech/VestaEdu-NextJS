@@ -14,14 +14,14 @@ const SingleEvent = (props) => {
                         {eventStartTime ? eventStartTime : '10:30 AM'} - {eventEndTime ? eventEndTime : '12:30PM'}
                     </div>
                     <h3 className="event__card--title">
-                        <Link href={`/event/${eventID}`}>
+                        <Link to={`/event/${eventID}`}>
                             {eventTitle ? eventTitle : 'A Better Alternative To Grading Student Writing'}
                         </Link>
                     </h3>
                     <div className="event_location">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-map-pin"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> {eventLocation ? eventLocation : 'New York, USA'}
                     </div>
-                    <Link href= {`/event/${eventID}`} className="event__card--link"> 
+                    <Link to= {`/event/${eventID}`} className="event__card--link"> 
                         {eventBtnText ? eventBtnText : 'Find Out More'} <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                     </Link>
                 </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 import Logo from "../../assets/images/logos/logo-footer.png";
 
@@ -20,7 +20,7 @@ const Footer = (props) => {
                     className="footer-logo white"
                     style={{ paddingTop: "-5px", marginBottom: "0px" }}
                   >
-                    <Link href="#" className="logo-text">
+                    <Link to="#" className="logo-text">
                       <img
                         src={footerLogo ? footerLogo : Logo}
                         alt="Footer Logo"
@@ -75,20 +75,20 @@ const Footer = (props) => {
                   <div className="footer-menu">
                     <ul>
                       <li>
-                        <Link href="/about">About</Link>
+                        <Link to="/about">About</Link>
                       </li>
                       <li>
-                        <Link href="/course">Courses</Link>
+                        <Link to="/course">Courses</Link>
                       </li>
                       <li>
-                        <Link href="/event">Events</Link>
+                        <Link to="/event">Events</Link>
                       </li>
                       <li>
-                        <Link href="/instructor">Career</Link>
+                        <Link to="/instructor">Career</Link>
                       </li>
 
                       <li>
-                        <Link href="/contact">Contact</Link>
+                        <Link to="/contact">Contact</Link>
                       </li>
                     </ul>
                   </div>
@@ -99,13 +99,13 @@ const Footer = (props) => {
                   <div className="footer-menu">
                     <ul>
                       <li>
-                        <Link href="/instructor">Partners</Link>
+                        <Link to="/instructor">Partners</Link>
                       </li>
                       <li>
-                        <Link href="/blog">News & Blog</Link>
+                        <Link to="/blog">News & Blog</Link>
                       </li>
                       <li>
-                        <Link href="/contact">FAQ</Link>
+                        <Link to="/contact">FAQ</Link>
                       </li>
                     </ul>
                   </div>
@@ -118,18 +118,18 @@ const Footer = (props) => {
         <div className="copyright">
           <div className="container">
             <div className="react-copy-left">
-              © 2025 <Link href="">VESTA ACADEMY</Link> All Rights Reserved
+              © 2025 <Link to="">VESTA ACADEMY</Link> All Rights Reserved
             </div>
             <div className="react-copy-right">
               <ul className="social-links">
                 <li className="follow">Follow us</li>
                 <li>
-                  <Link href="#">
+                  <Link to="#">
                     <span aria-hidden="true" className="social_facebook"></span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="#">
+                  <Link to="#">
                     <span aria-hidden="true" className="social_linkedin"></span>
                   </Link>
                 </li>
