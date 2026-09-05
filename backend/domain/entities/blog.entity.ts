@@ -1,27 +1,86 @@
 import { randomUUID } from "crypto";
-export class BlogEntity {
-    constructor(
-        public id: number,
-        public title: string,
-        public image: string,
-        public bannerImg: string,
-        public author: string,
-        public authorImg: string,
-        public content: string,
-        public createdAt: Date,
-        public updatedAt: Date,
-    ) {}
+interface BlogProps {
+  id: string;
+  title: string;
+  image?: string;
+  bannerImg: string;
+  author: string;
+  authorImg: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-    static create(blog: Partial<BlogEntity>): BlogEntity {
-        return new BlogEntity(
-            randomUUID(blog.id),
-            blog.title || undefined,
-            image?:blog.image || undefined,
-            bannerImg?:blog.bannerImg || undefined,
-            author?:blog.author || undefined,
-            authorImg?:blog.authorImg || undefined,
-            content?:blog.content || undefined,
-            createdAt?:blog.createdAt || new Date(),
-            updatedAt?:blog.updatedAt || new Date(),
-        );
-} }
+interface CreateBlogProps {
+  title: string;
+  image?: string;
+  bannerImg: string;
+  author: string;
+  authorImg: string;
+  content: string;
+}
+
+export class BlogEntity {
+  private constructor(
+    private readonly _id: string,
+    private _title: string,
+    private _image: string | undefined,
+    private _bannerImg: string,
+    private _author: string,
+    private _authorImg: string,
+    private _content: string,
+    private readonly _createdAt: Date,
+    private _updatedAt: Date
+  ) {}
+
+  static create(props: CreateBlogProps): BlogEntity {
+    return new BlogEntity(
+      randomUUID(),
+      props.title,
+      props.image,
+      props.bannerImg,
+      props.author,
+      props.authorImg,
+      props.content,
+      new Date(),
+      new Date()
+    );
+  }
+
+  static reconstitute(props: BlogProps): BlogEntity {
+    return new BlogEntity(
+      props.id,
+      props.title,
+      props.image,
+      props.bannerImg,
+      props.author,
+      props.authorImg,
+      props.content,
+      props.createdAt,
+      props.updatedAt
+    );
+  }
+
+  updateTitle(title: string): void {
+    const trimmed = title?.trim();
+    if (!trimmed) {
+      throw new Error("Blog title cannot be empty");
+    }
+    this._title = trimmed;
+    this._updatedAt = new Date();
+  }
+
+  updateContent(content: string): void {
+    const trimmed = content.trim();
+    if (!trimmed) throw new Error("Content must be fill");
+    this._content = content;
+    this._updatedAt = new Date();
+  }
+
+  updateImage(image: string | undefined): void {
+    this._image = image;
+    this._updatedAt = new Date();
+  }
+
+  
+}
