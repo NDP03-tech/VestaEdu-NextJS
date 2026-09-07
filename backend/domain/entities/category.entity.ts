@@ -1,18 +1,18 @@
-import { randomUUID } from "crypto";
+// (đã xoá import randomUUID - không còn dùng; DB tự sinh integer PK)
 import { validateName } from "../../utils/validation";
 export class CategoryEntity {
   private constructor(
-    private readonly _id: string,
+    private readonly _id: number,
     private _name: string,
     private readonly _createdAt: Date,
     private _updatedAt: Date
   ) {}
   static create(props: { name: string }): CategoryEntity {
-    return new CategoryEntity(randomUUID(), validateName(props.name), new Date(), new Date());
+    return new CategoryEntity(0, validateName(props.name), new Date(), new Date());
   }
 
   static reconstitute(props: {
-    id: string;
+    id: number;
     name: string;
     createdAt: Date;
     updatedAt: Date;

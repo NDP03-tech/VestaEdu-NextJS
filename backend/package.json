@@ -57,7 +57,12 @@
     "worker": "node queues/worker.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "migrate": "sequelize-cli db:migrate"
+    "migrate": "sequelize-cli db:migrate",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test:user-hashing": "node scripts/test-user-hashing.js",
+    "test:blog-entity": "node scripts/test-blog-entity.js",
+    "test:question-fixes": "node scripts/test-question-fixes.js"
   },
   "keywords": [],
   "author": "",
