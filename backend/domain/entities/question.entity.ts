@@ -1,58 +1,63 @@
-import { randomUUID } from "crypto";
+// =====================================================
+// QuestionEntity (viết lại)
+// =====================================================
+// So với bản cũ:
+//   1. gaps/dropdowns/hintWords/highlights/options được gộp vào 1
+//      AnswerBlueprint duy nhất (xem answer-blueprint.vo.ts) thay vì 5 mảng
+//      rời rạc validate không đồng nhất.
+//   2. changeType() KHÔNG còn dọn dẹp field theo questionType - mọi loại câu
+//      hỏi đều có thể trộn tự do gap/dropdown/hint/highlight/option theo yêu
+//      cầu nghiệp vụ. questionType giờ chỉ quyết định layout/widget hiển thị
+//      ở FE (vd: generated-dropdowns render "gap thường" thành dropdown tự
+//      sinh, blank-boxes render thành input tự do - cùng dữ liệu Gap[] như
+//      nhau, khác nhau ở cách FE vẽ).
+//   3. create()/update() BẮT BUỘC gọi AnswerBlueprint.assertMatchesText() để
+//      đảm bảo số lượng gap/dropdown/hint khớp đúng số marker .cloze trong
+//      questionText - vì FE tính key theo vị trí DOM, không dùng field index.
+//   4. grade() không còn switch(questionType) - chấm gộp theo field nào có
+//      dữ liệu, qua AnswerBlueprint.grade(). Chỉ còn tách riêng nhánh
+//      "chấm tay" (essay/description/speaking) vì các type này không có cấu
+//      trúc để tự động chấm.
+// =====================================================
 import {
   QUESTION_TYPES,
   isValidQuestionType,
   type QuestionType,
-  type QuestionOption as BaseQuestionOption,
 } from "../../utils/validation";
+import {
+  AnswerBlueprint,
+  type AnswerBlueprintProps,
+  type CreateAnswerBlueprintInput,
+} from "../value-object/answer-blueprint.vo";
+import type { GradeResult } from "../value-object/shared";
+import type { GapProps, CreateGapInput } from "../value-object/gap.vo";
+import type {
+  DropdownProps,
+  CreateDropdownInput,
+} from "../value-object/dropdown.vo";
+import type {
+  HintWordProps,
+  CreateHintWordInput,
+} from "../value-object/hint-word.vo";
+import type {
+  HighlightProps,
+  CreateHighlightInput,
+} from "../value-object/highlight.vo";
+import type {
+  QuestionOptionProps,
+  CreateQuestionOptionInput,
+} from "../value-object/question-option.vo";
 
-// Re-export để các consumer cũ vẫn import được từ entity
 export type { QuestionType } from "../../utils/validation";
 export { QUESTION_TYPES, isValidQuestionType };
 
-// Re-export QuestionOption với field isCorrect (khớp frontend + grading logic)
-export type QuestionOption = BaseQuestionOption;
-
-export interface Gap {
-  index: number;
-  correctAnswers: string[]; // cho phép nhiều đáp án đúng (controller: gap.correct_answers)
-  /**
-   * Vị trí bắt đầu của gap trong question_text (character offset).
-   * Frontend (QuestionFormTest.js) gửi kèm khi tạo, dùng để render highlight.
-   * Optional vì dữ liệu cũ có thể không có.
-   */
-  position?: number;
-  /** Độ dài gap (số ký tự) - tùy chọn */
-  length?: number;
-}
-
-export interface Dropdown {
-  index: number;
-  options?: string[];
-  correctAnswer: string; // controller: dd.correct_answer
-}
-
-export interface HintWord {
-  index: number;
-  word: string; // controller: hw.word — KHÔNG phải string[] như bản cũ
-  /**
-   * Gợi ý đi kèm (frontend QuestionFormTest.js gửi: { word, hint }).
-   * Hiện tại không dùng để chấm, chỉ để hiển thị gợi ý cho học viên.
-   */
-  hint?: string;
-}
-
-export interface Highlight {
-  index: number;
-  correctAnswers: string[]; // các cụm text được coi là đúng khi user highlight
-}
-
-const GAP_BASED_TYPES: QuestionType[] = [
-  "blank-boxes",
-  "reading",
-  "drag-drop-matching",
-  "generated-dropdowns",
-];
+// Re-export để consumer cũ (controller, service...) vẫn import được các type
+// quen thuộc từ entity thay vì phải biết đường dẫn value-object/.
+export type { GapProps as Gap } from "../value-object/gap.vo";
+export type { DropdownProps as Dropdown } from "../value-object/dropdown.vo";
+export type { HintWordProps as HintWord } from "../value-object/hint-word.vo";
+export type { HighlightProps as Highlight } from "../value-object/highlight.vo";
+export type { QuestionOptionProps as QuestionOption } from "../value-object/question-option.vo";
 
 const MANUAL_GRADING_TYPES: QuestionType[] = [
   "essay",
@@ -61,72 +66,64 @@ const MANUAL_GRADING_TYPES: QuestionType[] = [
 ];
 
 // ----------------------------------------------------------------
-// Grading result — trả về đủ thông tin để controller / UI dùng lại
-// mà không phải tự tính toán thêm lần nào nữa.
-// ----------------------------------------------------------------
-export interface GradeBreakdownItem {
-  label: string;
-  userAnswer: unknown;
-  correctAnswer: unknown;
-  correct: boolean | null; // null = chưa xác định (chấm tay)
-}
-
-export interface GradeResult {
-  isCorrect: boolean | null; // null = cần chấm tay
-  score: number;
-  maxScore: number;
-  requiresManualGrading: boolean;
-  breakdown: GradeBreakdownItem[];
-}
-
-// ----------------------------------------------------------------
 // Props
 // ----------------------------------------------------------------
-interface QuestionProps {
+export interface QuestionProps {
   id: number;
-  quizId: number; // FK tới QuizEntity.id (integer PK)
+  quizId: number;
   order: number;
   questionType: QuestionType;
   questionText: string;
   readingContent: string | null;
   points: number;
   explanation: string | null;
-  options: QuestionOption[];
-  gaps: Gap[];
-  dropdowns: Dropdown[];
-  hintWords: HintWord[];
-  highlights: Highlight[];
-  correctAnswer: unknown; // fallback cho type tự do / legacy
+  answerBlueprint: AnswerBlueprintProps;
+  /** Fallback cho type tự do / legacy, khi AnswerBlueprint rỗng. */
+  correctAnswer: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface CreateQuestionProps {
-  quizId: number;
+export interface CreateQuestionProps {
+  quizId: number | string;
   order?: number;
   questionType: QuestionType;
   questionText: string;
   readingContent?: string | null;
   points?: number;
   explanation?: string | null;
-  options?: QuestionOption[];
-  gaps?: Gap[];
-  dropdowns?: Dropdown[];
-  hintWords?: HintWord[];
-  highlights?: Highlight[];
+  answerBlueprint?: CreateAnswerBlueprintInput;
+  gaps?: CreateGapInput[];
+  dropdowns?: CreateDropdownInput[];
+  hintWords?: CreateHintWordInput[];
+  highlights?: CreateHighlightInput[];
+  options?: CreateQuestionOptionInput[];
   correctAnswer?: unknown;
+  /**
+   * Bỏ qua kiểm tra assertMatchesText (chỉ dùng cho import dữ liệu cũ / test).
+   * KHÔNG dùng cờ này trong luồng tạo câu hỏi bình thường từ admin panel.
+   */
+  skipClozeValidation?: boolean;
 }
 
-function norm(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function normalizeHighlightText(text: string): string {
-  return text
-    .replace(/[.,/#!$%^&*;:{}=\-_`~()[\]"]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .toLowerCase();
+export interface ReconstituteQuestionProps {
+  id: number;
+  quizId: number | string;
+  order?: number;
+  questionType: QuestionType;
+  questionText: string;
+  readingContent?: string | null;
+  points?: number;
+  explanation?: string | null;
+  answerBlueprint?: AnswerBlueprintProps;
+  gaps?: GapProps[];
+  dropdowns?: DropdownProps[];
+  hintWords?: HintWordProps[];
+  highlights?: HighlightProps[];
+  options?: QuestionOptionProps[];
+  correctAnswer?: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ----------------------------------------------------------------
@@ -140,29 +137,64 @@ export class QuestionEntity {
     if (!input.questionText?.trim()) {
       throw new Error("questionText cannot be empty");
     }
+    if (!isValidQuestionType(input.questionType)) {
+      throw new Error(`Invalid question type: ${input.questionType}`);
+    }
+
+    const questionText = input.questionText.trim();
+    const blueprintInput: CreateAnswerBlueprintInput =
+      input.answerBlueprint ?? {
+        gaps: input.gaps,
+        dropdowns: input.dropdowns,
+        hintWords: input.hintWords,
+        highlights: input.highlights,
+        options: input.options,
+      };
+    const blueprint = AnswerBlueprint.create(blueprintInput);
+
+    if (!input.skipClozeValidation) {
+      blueprint.assertMatchesText(questionText);
+    }
+
     const now = new Date();
     return new QuestionEntity({
       id: 0, // DB tự sinh integer PK
-      quizId: input.quizId,
-      order: input.order ?? 0,
+      quizId: Math.max(0, Number(input.quizId) || 0),
+      order: Math.max(0, Number(input.order ?? 0)),
       questionType: input.questionType,
-      questionText: input.questionText.trim(),
+      questionText,
       readingContent: input.readingContent?.trim() || null,
       points: Math.max(0, Number(input.points ?? 1)),
       explanation: input.explanation?.trim() || null,
-      options: input.options ?? [],
-      gaps: QuestionEntity.normalizeGaps(input.gaps ?? []),
-      dropdowns: input.dropdowns ?? [],
-      hintWords: QuestionEntity.normalizeHintWords(input.hintWords ?? []),
-      highlights: input.highlights ?? [],
+      answerBlueprint: blueprint.toJSON(),
       correctAnswer: input.correctAnswer ?? null,
       createdAt: now,
       updatedAt: now,
     });
   }
 
-  static reconstitute(props: QuestionProps): QuestionEntity {
-    return new QuestionEntity({ ...props });
+  static reconstitute(props: ReconstituteQuestionProps): QuestionEntity {
+    const blueprintProps: AnswerBlueprintProps = props.answerBlueprint ?? {
+      gaps: props.gaps,
+      dropdowns: props.dropdowns,
+      hintWords: props.hintWords,
+      highlights: props.highlights,
+      options: props.options,
+    };
+    return new QuestionEntity({
+      id: Number(props.id) || 0,
+      quizId: Math.max(0, Number(props.quizId) || 0),
+      order: Math.max(0, Number(props.order ?? 0)),
+      questionType: props.questionType,
+      questionText: props.questionText,
+      readingContent: props.readingContent?.trim() || null,
+      points: Math.max(0, Number(props.points ?? 0)),
+      explanation: props.explanation?.trim() || null,
+      answerBlueprint: blueprintProps,
+      correctAnswer: props.correctAnswer ?? null,
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
   }
 
   // ===== Getters =====
@@ -190,21 +222,6 @@ export class QuestionEntity {
   get explanation() {
     return this.props.explanation;
   }
-  get options(): QuestionOption[] {
-    return [...this.props.options];
-  }
-  get gaps(): Gap[] {
-    return [...this.props.gaps];
-  }
-  get dropdowns(): Dropdown[] {
-    return [...this.props.dropdowns];
-  }
-  get hintWords(): HintWord[] {
-    return [...this.props.hintWords];
-  }
-  get highlights(): Highlight[] {
-    return [...this.props.highlights];
-  }
   get correctAnswer() {
     return this.props.correctAnswer;
   }
@@ -215,6 +232,29 @@ export class QuestionEntity {
     return this.props.updatedAt;
   }
 
+  /** VO sống, dùng để đọc/chấm điểm - không dùng để mutate trực tiếp. */
+  get answerBlueprint(): AnswerBlueprint {
+    return AnswerBlueprint.reconstitute(this.props.answerBlueprint);
+  }
+
+  // Getters tiện dụng cho consumer chỉ cần đọc từng phần (giữ tương thích
+  // với code cũ đang gọi question.gaps / question.dropdowns / ...).
+  get gaps() {
+    return this.answerBlueprint.gaps.map((g) => g.toJSON());
+  }
+  get dropdowns() {
+    return this.answerBlueprint.dropdowns.map((d) => d.toJSON());
+  }
+  get hintWords() {
+    return this.answerBlueprint.hintWords.map((h) => h.toJSON());
+  }
+  get highlights() {
+    return this.answerBlueprint.highlights.map((h) => h.toJSON());
+  }
+  get options() {
+    return this.answerBlueprint.options.map((o) => o.toJSON());
+  }
+
   get requiresManualGrading(): boolean {
     return MANUAL_GRADING_TYPES.includes(this.props.questionType);
   }
@@ -223,10 +263,14 @@ export class QuestionEntity {
     this.props.updatedAt = new Date();
   }
 
-  // ===== Business methods (chỉnh sửa nội dung câu hỏi) =====
-  updateText(text: string): void {
+  // ===== Business methods =====
+  updateText(text: string, opts: { skipClozeValidation?: boolean } = {}): void {
     if (!text?.trim()) throw new Error("questionText cannot be empty");
-    this.props.questionText = text.trim();
+    const trimmed = text.trim();
+    if (!opts.skipClozeValidation) {
+      this.answerBlueprint.assertMatchesText(trimmed);
+    }
+    this.props.questionText = trimmed;
     this.touch();
   }
 
@@ -240,53 +284,60 @@ export class QuestionEntity {
     this.touch();
   }
 
-  setOptions(options: QuestionOption[]): void {
-    this.props.options = options;
+  setReadingContent(content: string | null): void {
+    this.props.readingContent = content?.trim() || null;
     this.touch();
   }
 
-  setGaps(gaps: Gap[]): void {
-    this.props.gaps = gaps;
+  setExplanation(explanation: string | null): void {
+    this.props.explanation = explanation?.trim() || null;
     this.touch();
   }
 
-  setDropdowns(dropdowns: Dropdown[]): void {
-    this.props.dropdowns = dropdowns;
+  /**
+   * Thay toàn bộ answerBlueprint (gap/dropdown/hint/highlight/option).
+   * Mặc định validate khớp questionText hiện tại - truyền skipValidation=true
+   * chỉ khi bạn chắc chắn sẽ gọi updateText() ngay sau đó với text tương ứng.
+   */
+  setAnswerBlueprint(
+    input: CreateAnswerBlueprintInput,
+    skipValidation = false,
+  ): void {
+    const blueprint = AnswerBlueprint.create(input);
+    if (!skipValidation) {
+      blueprint.assertMatchesText(this.props.questionText);
+    }
+    this.props.answerBlueprint = blueprint.toJSON();
     this.touch();
   }
 
-  setHintWords(hintWords: HintWord[]): void {
-    this.props.hintWords = hintWords;
-    this.touch();
-  }
-
-  setHighlights(highlights: Highlight[]): void {
-    this.props.highlights = highlights;
-    this.touch();
-  }
-
+  /**
+   * Đổi loại câu hỏi. KHÔNG xoá gap/dropdown/hint/highlight/option như bản
+   * cũ - mọi field độc lập với questionType, giữ nguyên toàn bộ dữ liệu khi
+   * đổi type (theo đúng yêu cầu "trộn tự do" của khách hàng).
+   */
   changeType(newType: QuestionType): void {
+    if (!isValidQuestionType(newType)) {
+      throw new Error(`Invalid question type: ${newType}`);
+    }
     this.props.questionType = newType;
-    // Dọn dữ liệu không còn liên quan tới loại câu hỏi mới,
-    // tránh để lại "rác" gây sai khi chấm điểm hoặc hiển thị lại.
-    if (!GAP_BASED_TYPES.includes(newType)) {
-      this.props.gaps = [];
-      this.props.dropdowns = [];
-      this.props.hintWords = [];
-    }
-    if (newType !== "find-highlight") this.props.highlights = [];
-    if (newType !== "multiple-choice" && newType !== "checkboxes") {
-      this.props.options = [];
-    }
+    this.touch();
+  }
+
+  setCorrectAnswer(value: unknown): void {
+    this.props.correctAnswer = value ?? null;
     this.touch();
   }
 
   // ================================================================
-  // CHẤM ĐIỂM — nguồn chân lý duy nhất.
-  // Controller / service KHÔNG được tự viết lại logic so khớp này ở
-  // bất kỳ đâu khác (submit, xem lại kết quả, export báo cáo...).
+  // CHẤM ĐIỂM — nguồn chân lý duy nhất, KHÔNG viết lại logic so khớp ở
+  // controller/service.
+  //
+  // Không còn switch(questionType): chấm gộp theo field nào có dữ liệu
+  // trong answerBlueprint. essay/description/speaking luôn cần chấm tay vì
+  // không có cấu trúc để so khớp tự động.
   // ================================================================
-  grade(userAnswer: unknown): GradeResult {
+  grade(rawAnswer: unknown): GradeResult {
     if (this.requiresManualGrading) {
       return {
         isCorrect: null,
@@ -296,7 +347,7 @@ export class QuestionEntity {
         breakdown: [
           {
             label: `${this.props.questionType} - chấm tay`,
-            userAnswer: typeof userAnswer === "string" ? userAnswer : "",
+            userAnswer: typeof rawAnswer === "string" ? rawAnswer : "",
             correctAnswer: "(manual grading)",
             correct: null,
           },
@@ -304,168 +355,16 @@ export class QuestionEntity {
       };
     }
 
-    if (GAP_BASED_TYPES.includes(this.props.questionType)) {
-      return this.gradeGapBased(userAnswer);
+    const blueprint = this.answerBlueprint;
+
+    if (blueprint.isEmpty()) {
+      return this.gradeDefault(rawAnswer);
     }
 
-    switch (this.props.questionType) {
-      case "multiple-choice":
-        return this.gradeMultipleChoice(userAnswer);
-      case "checkboxes":
-        return this.gradeCheckboxes(userAnswer);
-      case "find-highlight":
-        return this.gradeHighlight(userAnswer);
-      default:
-        return this.gradeDefault(userAnswer);
-    }
-  }
-
-  private gradeGapBased(userAnswer: unknown): GradeResult {
-    const raw = (userAnswer ?? {}) as Record<string, unknown>;
-    const points = this.props.points || 1;
-    let earned = 0;
-    let max = 0;
-    const breakdown: GradeBreakdownItem[] = [];
-
-    this.props.gaps.forEach((gap, idx) => {
-      max += points;
-      const userVal = raw[`gap_${idx}`];
-      const correctAnswers = gap.correctAnswers.map(norm);
-      const ok = correctAnswers.includes(norm(userVal));
-      if (ok) earned += points;
-      breakdown.push({
-        label: `Gap ${idx + 1}`,
-        userAnswer: userVal ?? "",
-        correctAnswer: gap.correctAnswers[0] ?? "",
-        correct: ok,
-      });
-    });
-
-    this.props.dropdowns.forEach((dd, idx) => {
-      max += points;
-      const userVal = raw[`dropdown_${idx}`];
-      const ok = norm(userVal) === norm(dd.correctAnswer);
-      if (ok) earned += points;
-      breakdown.push({
-        label: `Dropdown ${idx + 1}`,
-        userAnswer: userVal ?? "",
-        correctAnswer: dd.correctAnswer,
-        correct: ok,
-      });
-    });
-
-    this.props.hintWords.forEach((hw, idx) => {
-      max += points;
-      const userVal = raw[`hint_${idx}`];
-      const ok = norm(userVal) === norm(hw.word);
-      if (ok) earned += points;
-      breakdown.push({
-        label: `Hint ${idx + 1}`,
-        userAnswer: userVal ?? "",
-        correctAnswer: hw.word,
-        correct: ok,
-      });
-    });
-
-    return {
-      isCorrect: max > 0 && earned === max,
-      score: earned,
-      maxScore: max,
-      requiresManualGrading: false,
-      breakdown,
-    };
-  }
-
-  private gradeMultipleChoice(userAnswer: unknown): GradeResult {
-    const correctOption = this.props.options.find((o) => o.isCorrect);
-    const ok = norm(userAnswer) === norm(correctOption?.text);
-    return {
-      isCorrect: ok,
-      score: ok ? this.props.points : 0,
-      maxScore: this.props.points,
-      requiresManualGrading: false,
-      breakdown: [
-        {
-          label: "Answer",
-          userAnswer,
-          correctAnswer: correctOption?.text ?? null,
-          correct: ok,
-        },
-      ],
-    };
-  }
-
-  private gradeCheckboxes(userAnswer: unknown): GradeResult {
-    const userSet = new Set(
-      Array.isArray(userAnswer) ? userAnswer.map((v) => Number(v)) : [],
+    return blueprint.grade(
+      (rawAnswer ?? {}) as Record<string, unknown>,
+      this.props.points || 1,
     );
-    const correctIndexes = this.props.options
-      .map((o, idx) => (o.isCorrect ? idx : -1))
-      .filter((idx) => idx !== -1);
-
-    const points = this.props.points || 1;
-    const max = correctIndexes.length * points;
-    let earned = 0;
-    const breakdown: GradeBreakdownItem[] = [];
-
-    this.props.options.forEach((opt, idx) => {
-      const shouldSelect = opt.isCorrect;
-      const wasSelected = userSet.has(idx);
-      if (shouldSelect && wasSelected) earned += points;
-      breakdown.push({
-        label: opt.text,
-        userAnswer: wasSelected,
-        correctAnswer: shouldSelect,
-        correct: shouldSelect === wasSelected,
-      });
-    });
-
-    return {
-      isCorrect: max > 0 && earned === max,
-      score: earned,
-      maxScore: max,
-      requiresManualGrading: false,
-      breakdown,
-    };
-  }
-
-  private gradeHighlight(userAnswer: unknown): GradeResult {
-    const userHighlights: Array<{ text?: string }> = Array.isArray(userAnswer)
-      ? userAnswer
-      : [];
-    const points = this.props.points || 1;
-    const max = this.props.highlights.length * points;
-    let earned = 0;
-    const usedIndexes = new Set<number>();
-    const breakdown: GradeBreakdownItem[] = [];
-
-    this.props.highlights.forEach((h, hIdx) => {
-      const targets = h.correctAnswers.map(normalizeHighlightText);
-      const matchIdx = userHighlights.findIndex(
-        (uh, i) =>
-          !usedIndexes.has(i) &&
-          targets.includes(normalizeHighlightText(uh.text ?? "")),
-      );
-      const found = matchIdx !== -1;
-      if (found) {
-        usedIndexes.add(matchIdx);
-        earned += points;
-      }
-      breakdown.push({
-        label: `Highlight ${hIdx + 1}`,
-        userAnswer: found ? userHighlights[matchIdx].text : "",
-        correctAnswer: h.correctAnswers[0] ?? "",
-        correct: found,
-      });
-    });
-
-    return {
-      isCorrect: max > 0 && earned === max,
-      score: earned,
-      maxScore: max,
-      requiresManualGrading: false,
-      breakdown,
-    };
   }
 
   private gradeDefault(userAnswer: unknown): GradeResult {
@@ -487,67 +386,21 @@ export class QuestionEntity {
     };
   }
 
-  toJSON(): QuestionProps {
-    return { ...this.props };
-  }
-
-  // ===== Static normalizers (chạy trong create()) =====
-  /**
-   * Chuẩn hoá Gap: ép position/length về số >= 0, ép correctAnswers thành string[].
-   * Loại bỏ gap không có correctAnswers hợp lệ HOẶC có position/length không hợp lệ.
-   * Gán lại index theo thứ tự 0..n-1 (frontend có thể gửi index lộn xộn).
-   */
-  static normalizeGaps(gaps: Gap[]): Gap[] {
-    const filtered = gaps
-      .filter((g) => {
-        // Phải có correctAnswers hợp lệ
-        if (!Array.isArray(g.correctAnswers) || g.correctAnswers.length === 0) return false;
-        // Nếu có position thì phải là số >= 0
-        if (g.position !== undefined) {
-          if (typeof g.position !== "number" || !Number.isFinite(g.position) || g.position < 0) {
-            return false;
-          }
-        }
-        // Nếu có length thì phải là số >= 0
-        if (g.length !== undefined) {
-          if (typeof g.length !== "number" || !Number.isFinite(g.length) || g.length < 0) {
-            return false;
-          }
-        }
-        return true;
-      })
-      .map((g) => ({
-        index: g.index,
-        correctAnswers: g.correctAnswers.map((a) => String(a).trim()).filter(Boolean),
-        position: typeof g.position === "number" ? g.position : undefined,
-        length: typeof g.length === "number" ? g.length : undefined,
-      }));
-    // Gán lại index tuần tự để renderer dùng gap_0, gap_1, ... đúng thứ tự
-    return filtered.map((g, idx) => ({
-      index: idx,
-      correctAnswers: g.correctAnswers,
-      position: g.position,
-      length: g.length,
-    }));
-  }
-
-  /**
-   * Chuẩn hoá HintWord: trim word, hint optional, loại bỏ word rỗng.
-   * Gán lại index tuần tự.
-   */
-  static normalizeHintWords(items: HintWord[]): HintWord[] {
-    const filtered = items
-      .map((h) => {
-        const word = String(h.word ?? "").trim();
-        if (!word) return null;
-        const norm: HintWord = { index: h.index, word };
-        if (h.hint) {
-          const trimmed = h.hint.trim();
-          if (trimmed) norm.hint = trimmed;
-        }
-        return norm;
-      })
-      .filter((x): x is HintWord => x !== null);
-    return filtered.map((h, idx) => ({ ...h, index: idx }));
+  toJSON(): QuestionProps & {
+    gaps: GapProps[];
+    dropdowns: DropdownProps[];
+    hintWords: HintWordProps[];
+    highlights: HighlightProps[];
+    options: QuestionOptionProps[];
+  } {
+    return {
+      ...this.props,
+      answerBlueprint: { ...this.props.answerBlueprint },
+      gaps: this.gaps,
+      dropdowns: this.dropdowns,
+      hintWords: this.hintWords,
+      highlights: this.highlights,
+      options: this.options,
+    };
   }
 }

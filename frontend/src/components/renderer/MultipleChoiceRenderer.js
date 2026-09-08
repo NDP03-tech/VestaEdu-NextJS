@@ -1,55 +1,70 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import ClozeTextRenderer from "./ClozeTextRenderer";
 
 const MultipleChoiceRenderer = ({
   question,
   initialAnswer = "",
   frozenAnswer = "",
   showCorrectAnswer = false,
+  answerStatus = {},
+  correctAnswer = null,
   onAnswerChange,
   editable = true, // ✅ NEW: Control whether user can edit
 }) => {
-  const [selectedAnswer, setSelectedAnswer] = useState(initialAnswer);
+  const hasCloze = useMemo(() => {
+    return /<a\b[^>]*\bcloze\b/i.test(question?.question_text || "");
+  }, [question?.question_text]);
+
+  const extractSelected = (ans) => {
+    if (typeof ans === "string") return ans;
+    if (ans && typeof ans === "object") return ans.selectedOption || "";
+    return "";
+  };
+
+  const extractCloze = (ans) => {
+    if (ans && typeof ans === "object") {
+      const { selectedOption, ...rest } = ans;
+      return rest;
+    }
+    return {};
+  };
+
+  const [selectedAnswer, setSelectedAnswer] = useState(() =>
+    extractSelected(initialAnswer)
+  );
+  const [clozeAnswers, setClozeAnswers] = useState(() =>
+    extractCloze(initialAnswer)
+  );
   const [hoveredOption, setHoveredOption] = useState(null);
 
   useEffect(() => {
-    setSelectedAnswer(initialAnswer);
+    setSelectedAnswer(extractSelected(initialAnswer));
+    setClozeAnswers(extractCloze(initialAnswer));
   }, [initialAnswer]);
 
-  useEffect(() => {
-    // Add animation styles if not exists
-    if (!document.getElementById("multiple-choice-animations")) {
-      const style = document.createElement("style");
-      style.id = "multiple-choice-animations";
-      style.textContent = `
-        @keyframes radio-check {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes option-pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.02); }
-          100% { transform: scale(1); }
-        }
-        @keyframes icon-appear {
-          0% { opacity: 0; transform: scale(0.5) rotate(-45deg); }
-          50% { transform: scale(1.2) rotate(5deg); }
-          100% { opacity: 1; transform: scale(1) rotate(0deg); }
-        }
-        @keyframes shake-incorrect {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }, []);
-
-  const handleChange = (optionText) => {
-    if (!editable) return; // ✅ FIX: Check editable instead of showCorrectAnswer
+  const handleOptionChange = (optionText) => {
+    if (!editable) return;
     setSelectedAnswer(optionText);
-    onAnswerChange?.(question.id, optionText);
+
+    if (hasCloze) {
+      const merged = { ...clozeAnswers, selectedOption: optionText };
+      onAnswerChange?.(question.id, merged);
+    } else if (typeof initialAnswer === "object" && initialAnswer !== null) {
+      const merged = { ...initialAnswer, selectedOption: optionText };
+      onAnswerChange?.(question.id, merged);
+    } else {
+      onAnswerChange?.(question.id, optionText);
+    }
+  };
+
+  const handleClozeChange = (key, val) => {
+    const updated = {
+      ...clozeAnswers,
+      [key]: val,
+      ...(selectedAnswer ? { selectedOption: selectedAnswer } : {}),
+    };
+    setClozeAnswers(updated);
+    onAnswerChange?.(question.id, updated);
   };
 
   const renderIconAndStyle = (option) => {
@@ -184,8 +199,25 @@ const MultipleChoiceRenderer = ({
             fontSize: 16,
             lineHeight: 1.8,
           }}
-          dangerouslySetInnerHTML={{ __html: question.question_text }}
-        />
+        >
+          <ClozeTextRenderer
+            questionText={question.question_text}
+            questionType={question.question_type || "multiple-choice"}
+            answers={clozeAnswers}
+            onAnswerChange={handleClozeChange}
+            question={question}
+            editable={editable}
+            showCorrectAnswer={showCorrectAnswer}
+            answerStatus={answerStatus}
+            correctAnswer={correctAnswer}
+            frozenAnswers={
+              frozenAnswer && typeof frozenAnswer === "object"
+                ? frozenAnswer
+                : {}
+            }
+            fontSize={16}
+          />
+        </div>
       )}
 
       {/* Options */}
@@ -200,8 +232,8 @@ const MultipleChoiceRenderer = ({
             <div
               key={option.id || index}
               style={getOptionStyle(option, index, isSelected, isHovered)}
-              onClick={() => handleChange(optionText)} // ✅ FIX: Let handleChange check editable
-              onMouseEnter={() => editable && setHoveredOption(index)} // ✅ FIX: Check editable
+              onClick={() => handleOptionChange(optionText)}
+              onMouseEnter={() => editable && setHoveredOption(index)}
               onMouseLeave={() => setHoveredOption(null)}
             >
               {/* Custom Radio Button */}
@@ -210,8 +242,8 @@ const MultipleChoiceRenderer = ({
                   type="radio"
                   name={`question-${question.id}`}
                   checked={isSelected}
-                  onChange={() => handleChange(optionText)} // ✅ FIX: Let handleChange check editable
-                  disabled={!editable} // ✅ FIX: Disable based on editable
+                  onChange={() => handleOptionChange(optionText)}
+                  disabled={!editable}
                   style={getRadioStyle(isSelected)}
                 />
                 {isSelected && (

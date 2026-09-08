@@ -169,7 +169,7 @@ const FindHighlightRenderer = ({
 
   // Calculate stats
   const totalHighlights = highlights.length;
-  const targetCount = question?.gaps?.length || 0;
+  const targetCount = question?.highlights?.length || question?.gaps?.length || 0;
 
   return (
     <div style={{ padding: "16px 0" }}>

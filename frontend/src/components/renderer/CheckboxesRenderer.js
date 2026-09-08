@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import parse from "html-react-parser";
+import ClozeTextRenderer from "./ClozeTextRenderer";
 
 const CheckboxesRenderer = ({
   question,
@@ -10,7 +11,32 @@ const CheckboxesRenderer = ({
   answerStatus = {}, // 👈 truyền vào
   editable = true, // ✅ NEW: Control whether user can edit
 }) => {
-  const [userAnswers, setUserAnswers] = useState([]);
+  const hasCloze = useMemo(() => {
+    return /<a\b[^>]*\bcloze\b/i.test(question?.question_text || "");
+  }, [question?.question_text]);
+
+  const extractSelected = (ans) => {
+    if (Array.isArray(ans)) return ans.map((val) => Number(val));
+    if (ans && typeof ans === "object" && Array.isArray(ans.selectedOptions)) {
+      return ans.selectedOptions.map((val) => Number(val));
+    }
+    return [];
+  };
+
+  const extractCloze = (ans) => {
+    if (ans && typeof ans === "object" && !Array.isArray(ans)) {
+      const { selectedOptions, ...rest } = ans;
+      return rest;
+    }
+    return {};
+  };
+
+  const [userAnswers, setUserAnswers] = useState(() =>
+    extractSelected(initialAnswer)
+  );
+  const [clozeAnswers, setClozeAnswers] = useState(() =>
+    extractCloze(initialAnswer)
+  );
   const [options, setOptions] = useState([]);
   const [hoveredOption, setHoveredOption] = useState(null);
 
@@ -41,14 +67,9 @@ const CheckboxesRenderer = ({
   }, []);
 
   useEffect(() => {
-    // ✅ FIX: Safely set options with fallback
     setOptions(question?.options || []);
-
-    // ✅ FIX: Safely normalize initialAnswer
-    const normalized = Array.isArray(initialAnswer)
-      ? initialAnswer.map((val) => Number(val))
-      : [];
-    setUserAnswers(normalized);
+    setUserAnswers(extractSelected(initialAnswer));
+    setClozeAnswers(extractCloze(initialAnswer));
   }, [question?.id, initialAnswer, question?.options]);
 
   const handleOptionChange = (index) => {
@@ -59,10 +80,30 @@ const CheckboxesRenderer = ({
       : [...userAnswers, index];
 
     setUserAnswers(updated);
-    onAnswerChange(
-      question.id,
-      updated.map((i) => Number(i))
-    );
+
+    if (hasCloze) {
+      const merged = { ...clozeAnswers, selectedOptions: updated };
+      onAnswerChange(question.id, merged);
+    } else if (
+      typeof initialAnswer === "object" &&
+      initialAnswer !== null &&
+      !Array.isArray(initialAnswer)
+    ) {
+      const merged = { ...initialAnswer, selectedOptions: updated };
+      onAnswerChange(question.id, merged);
+    } else {
+      onAnswerChange(question.id, updated);
+    }
+  };
+
+  const handleClozeChange = (key, val) => {
+    const updated = {
+      ...clozeAnswers,
+      [key]: val,
+      selectedOptions: userAnswers,
+    };
+    setClozeAnswers(updated);
+    onAnswerChange(question.id, updated);
   };
 
   const getOptionStyle = (index, isChecked, isHovered) => {
@@ -215,7 +256,18 @@ const CheckboxesRenderer = ({
           lineHeight: 1.8,
         }}
       >
-        {parse(question.question_text || "")}
+        <ClozeTextRenderer
+          questionText={question?.question_text}
+          questionType={question?.question_type || "checkboxes"}
+          answers={clozeAnswers}
+          onAnswerChange={handleClozeChange}
+          question={question}
+          editable={editable}
+          showCorrectAnswer={showCorrectAnswer}
+          answerStatus={answerStatus}
+          correctAnswer={correctAnswer}
+          fontSize={16}
+        />
       </div>
 
       {/* Options */}

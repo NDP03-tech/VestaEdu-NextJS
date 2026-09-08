@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import MicRecorder from "mic-recorder-to-mp3";
 import config from "../../config";
+import ClozeTextRenderer from "./ClozeTextRenderer";
 import {
   Button,
   Upload,
@@ -31,7 +32,29 @@ const SpeakingRenderer = ({
   question,
   initialAnswer = null,
   onAnswerChange,
+  editable = true,
+  showCorrectAnswer = false,
+  answerStatus = {},
+  correctAnswer = null,
 }) => {
+  const hasCloze = useMemo(() => {
+    return /<a\b[^>]*\bcloze\b/i.test(question?.question_text || "");
+  }, [question?.question_text]);
+
+  const extractAudio = (ans) => {
+    if (typeof ans === "string" || ans instanceof File) return ans;
+    if (ans && typeof ans === "object") return ans.audio || null;
+    return null;
+  };
+
+  const extractCloze = (ans) => {
+    if (ans && typeof ans === "object" && !(ans instanceof File)) {
+      const { audio, ...rest } = ans;
+      return rest;
+    }
+    return {};
+  };
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaUrl, setMediaUrl] = useState(null);
@@ -40,17 +63,48 @@ const SpeakingRenderer = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [clozeAnswers, setClozeAnswers] = useState(() =>
+    extractCloze(initialAnswer)
+  );
   const mediaRef = useRef(null);
   const timerRef = useRef(null);
 
+  const notifyChange = (newAudio, newCloze = clozeAnswers) => {
+    if (hasCloze) {
+      onAnswerChange?.(question.id, { ...newCloze, audio: newAudio });
+    } else if (
+      typeof initialAnswer === "object" &&
+      initialAnswer !== null &&
+      !(initialAnswer instanceof File)
+    ) {
+      onAnswerChange?.(question.id, { ...initialAnswer, audio: newAudio });
+    } else {
+      onAnswerChange?.(question.id, newAudio);
+    }
+  };
+
+  const handleClozeChange = (key, val) => {
+    const updated = {
+      ...clozeAnswers,
+      [key]: val,
+      ...(mediaUrl || mediaBlob ? { audio: mediaBlob || mediaUrl } : {}),
+    };
+    setClozeAnswers(updated);
+    if (hasCloze) {
+      onAnswerChange?.(question.id, updated);
+    }
+  };
+
   useEffect(() => {
-    if (initialAnswer) {
-      if (typeof initialAnswer === "string") {
-        setMediaUrl(initialAnswer);
+    const audioVal = extractAudio(initialAnswer);
+    setClozeAnswers(extractCloze(initialAnswer));
+    if (audioVal) {
+      if (typeof audioVal === "string") {
+        setMediaUrl(audioVal);
         setMediaBlob(null);
-      } else if (initialAnswer instanceof File) {
-        setMediaUrl(URL.createObjectURL(initialAnswer));
-        setMediaBlob(initialAnswer);
+      } else if (audioVal instanceof File) {
+        setMediaUrl(URL.createObjectURL(audioVal));
+        setMediaBlob(audioVal);
       }
     }
   }, [initialAnswer]);
@@ -129,9 +183,7 @@ const SpeakingRenderer = ({
         if (uploadedUrl) {
           setMediaUrl(uploadedUrl);
           setMediaBlob(null);
-          if (onAnswerChange) {
-            onAnswerChange(question.id, uploadedUrl);
-          }
+          notifyChange(uploadedUrl);
           message.success("✅ Recording uploaded successfully");
         }
         setIsRecording(false);
@@ -156,9 +208,7 @@ const SpeakingRenderer = ({
     if (uploadedUrl) {
       setMediaUrl(uploadedUrl);
       setMediaBlob(null);
-      if (onAnswerChange) {
-        onAnswerChange(question.id, uploadedUrl);
-      }
+      notifyChange(uploadedUrl);
       message.success("📁 File uploaded successfully");
     }
   };
@@ -168,9 +218,7 @@ const SpeakingRenderer = ({
     setMediaBlob(null);
     setCurrentTime(0);
     setDuration(0);
-    if (onAnswerChange) {
-      onAnswerChange(question.id, null);
-    }
+    notifyChange(null);
     message.info("Media removed");
   };
 
@@ -381,10 +429,19 @@ const SpeakingRenderer = ({
               Speaking Question
             </Text>
           </div>
-          <div
-            className="question-content"
-            dangerouslySetInnerHTML={{ __html: question.question_text }}
-          />
+          <div className="question-content">
+            <ClozeTextRenderer
+              questionText={question?.question_text}
+              questionType={question?.question_type || "speaking"}
+              answers={clozeAnswers}
+              onAnswerChange={handleClozeChange}
+              question={question}
+              editable={editable}
+              showCorrectAnswer={showCorrectAnswer}
+              answerStatus={answerStatus}
+              correctAnswer={correctAnswer}
+            />
+          </div>
         </div>
 
         {/* Control Card */}

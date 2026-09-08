@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import ClozeTextRenderer from "./ClozeTextRenderer";
 import {
   Card,
   Input,
@@ -32,7 +33,28 @@ const EssayRenderer = ({
   showCorrectAnswer = false,
   editable = true,
 }) => {
+  const hasCloze = useMemo(() => {
+    return /<a\b[^>]*\bcloze\b/i.test(question?.question_text || "");
+  }, [question?.question_text]);
+
+  const extractEssayText = (ans) => {
+    if (typeof ans === "string") return ans;
+    if (ans && typeof ans === "object") return ans.essay || "";
+    return "";
+  };
+
+  const extractCloze = (ans) => {
+    if (ans && typeof ans === "object" && !Array.isArray(ans)) {
+      const { essay, ...rest } = ans;
+      return rest;
+    }
+    return {};
+  };
+
   const [answer, setAnswer] = useState("");
+  const [clozeAnswers, setClozeAnswers] = useState(() =>
+    extractCloze(initialAnswer)
+  );
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [fontSize, setFontSize] = useState(16);
@@ -52,7 +74,8 @@ const EssayRenderer = ({
 
     if (showCorrectAnswer) {
       // Review mode: ưu tiên frozenAnswer
-      displayAnswer = frozenAnswer || initialAnswer || "";
+      displayAnswer =
+        extractEssayText(frozenAnswer) || extractEssayText(initialAnswer) || "";
       console.log(`📝 Review mode - Question ${question?.id}:`, {
         frozenAnswer,
         initialAnswer,
@@ -99,7 +122,28 @@ const EssayRenderer = ({
     const newValue = e.target.value;
     setAnswer(newValue);
     updateCounts(newValue);
-    onAnswerChange && onAnswerChange(question.id, newValue);
+
+    if (hasCloze) {
+      onAnswerChange?.(question.id, { ...clozeAnswers, essay: newValue });
+    } else if (
+      typeof initialAnswer === "object" &&
+      initialAnswer !== null &&
+      !Array.isArray(initialAnswer)
+    ) {
+      onAnswerChange?.(question.id, { ...initialAnswer, essay: newValue });
+    } else {
+      onAnswerChange?.(question.id, newValue);
+    }
+  };
+
+  const handleClozeChange = (key, val) => {
+    const updated = {
+      ...clozeAnswers,
+      [key]: val,
+      essay: answer,
+    };
+    setClozeAnswers(updated);
+    onAnswerChange?.(question.id, updated);
   };
 
   const getWordCountStatus = () => {
@@ -119,7 +163,17 @@ const EssayRenderer = ({
   const handleClear = () => {
     setAnswer("");
     updateCounts("");
-    onAnswerChange && onAnswerChange(question.id, "");
+    if (hasCloze) {
+      onAnswerChange?.(question.id, { ...clozeAnswers, essay: "" });
+    } else if (
+      typeof initialAnswer === "object" &&
+      initialAnswer !== null &&
+      !Array.isArray(initialAnswer)
+    ) {
+      onAnswerChange?.(question.id, { ...initialAnswer, essay: "" });
+    } else {
+      onAnswerChange?.(question.id, "");
+    }
     message.info("Essay cleared");
   };
 
@@ -178,8 +232,18 @@ const EssayRenderer = ({
               lineHeight: 1.8,
               color: "#2c3e50",
             }}
-            dangerouslySetInnerHTML={{ __html: question.question_text }}
-          />
+          >
+            <ClozeTextRenderer
+              questionText={question.question_text}
+              questionType={question.question_type || "essay"}
+              answers={clozeAnswers}
+              onAnswerChange={handleClozeChange}
+              question={question}
+              editable={editable}
+              showCorrectAnswer={showCorrectAnswer}
+              fontSize={fontSize}
+            />
+          </div>
         ) : (
           <Text type="secondary">No question content provided.</Text>
         )}

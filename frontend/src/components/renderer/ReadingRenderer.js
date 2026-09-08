@@ -61,10 +61,17 @@ const ReadingRenderer = ({
   };
 
   const calculateProgress = () => {
-    const totalGaps = Object.keys(question?.gaps?.correct_answers || {}).length;
+    const gapsCount = Array.isArray(question?.gaps) ? question.gaps.length : 0;
+    const dropdownsCount = Array.isArray(question?.dropdowns)
+      ? question.dropdowns.length
+      : 0;
+    const hintsCount = Array.isArray(question?.hintWords)
+      ? question.hintWords.length
+      : 0;
+    const totalGaps = gapsCount + dropdownsCount + hintsCount;
     if (totalGaps === 0) return 0;
     const filledGaps = Object.values(answers).filter(
-      (val) => val && val.trim()
+      (val) => typeof val === "string" && val.trim()
     ).length;
     return Math.round((filledGaps / totalGaps) * 100);
   };
@@ -96,6 +103,7 @@ const ReadingRenderer = ({
     container.innerHTML = question.question_text;
     let gapIndex = 0;
     let dropdownIndex = 0;
+    let hintIndex = 0;
 
     const walkNodes = (node) => {
       const children = [];
@@ -120,10 +128,39 @@ const ReadingRenderer = ({
 
           if (el.classList.contains("cloze")) {
             const isDropdown = el.classList.contains("dropdown");
-            const index = isDropdown
-              ? `dropdown_${dropdownIndex++}`
-              : `gap_${gapIndex++}`;
-            const correct = question?.gaps?.correct_answers?.[index];
+            const isHint =
+              el.closest(".hint-wrapper") ||
+              el.classList.contains("hint") ||
+              el.classList.contains("hint-word");
+
+            let index;
+            let correct = "";
+            let hintData = null;
+
+            if (isDropdown) {
+              const dIdx = dropdownIndex++;
+              index = `dropdown_${dIdx}`;
+              correct =
+                correctAnswer?.[index] ??
+                question?.dropdowns?.[dIdx]?.correctAnswer ??
+                question?.dropdowns?.[dIdx]?.correct_answer ??
+                "";
+            } else if (isHint) {
+              const hIdx = hintIndex++;
+              index = `hint_${hIdx}`;
+              const hw = question?.hintWords?.[hIdx];
+              correct = correctAnswer?.[index] ?? hw?.word ?? "";
+              hintData = el.dataset?.hint || hw?.hint || null;
+            } else {
+              const gIdx = gapIndex++;
+              index = `gap_${gIdx}`;
+              const gapItem = question?.gaps?.[gIdx];
+              correct =
+                correctAnswer?.[index] ??
+                gapItem?.correctAnswers?.[0] ??
+                gapItem?.correct_answers?.[0] ??
+                "";
+            }
 
             let currentValue = "";
             if (showCorrectAnswer && frozenAnswers?.[index] !== undefined) {
@@ -187,6 +224,41 @@ const ReadingRenderer = ({
                       </option>
                     ))}
                   </select>
+                  {isIncorrect && correct && (
+                    <Tooltip title="Correct answer">
+                      <span className="correct-answer-hint">✓ {correct}</span>
+                    </Tooltip>
+                  )}
+                </span>
+              );
+            } else if (isHint) {
+              children.push(
+                <span
+                  key={`hint-${index}`}
+                  style={{ display: "inline-block", position: "relative" }}
+                >
+                  <Tooltip title={hintData ? `Gợi ý: ${hintData}` : undefined}>
+                    <input
+                      type="text"
+                      className={`gap-input hint-input ${
+                        isCorrect ? "correct-answer" : ""
+                      } ${isIncorrect ? "incorrect-answer" : ""}`}
+                      style={{
+                        width: "auto",
+                        minWidth: 60,
+                        maxWidth: 160,
+                        margin: "0 4px",
+                        padding: "6px 10px",
+                        fontSize: `${fontSize}px`,
+                        borderColor: hintData ? "#faad14" : undefined,
+                        ...getStyle(index),
+                      }}
+                      disabled={!editable}
+                      value={currentValue}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      placeholder={hintData ? `💡 ${hintData}` : "..."}
+                    />
+                  </Tooltip>
                   {isIncorrect && correct && (
                     <Tooltip title="Correct answer">
                       <span className="correct-answer-hint">✓ {correct}</span>
