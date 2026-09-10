@@ -1,0 +1,1 @@
+export { CreateCourseRegistrationUseCase } from "./index";

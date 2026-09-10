@@ -25,6 +25,22 @@ export class CategoryEntity {
     );
   }
 
+  get id(): number {
+    return this._id;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get createdAt(): Date {
+    return this._createdAt;
+  }
+
+  get updatedAt(): Date {
+    return this._updatedAt;
+  }
+
   updateName(name: string): void {
     this._name = validateName(name);
     this._updatedAt = new Date();

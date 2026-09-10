@@ -1,0 +1,1 @@
+export { DeleteQuizUseCase } from "./index";

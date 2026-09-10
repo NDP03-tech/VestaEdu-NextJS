@@ -4,7 +4,7 @@ import {
   normalizeEmailOptional,
   validatePassword,
 } from "../../utils/validation";
-import type { PasswordHasher } from "../ports/password-hasher.port";
+import type { PasswordHasher } from "../repositories/password-hasher.interface";
 
 export type UserRole = "admin" | "teacher" | "student";
 
@@ -53,7 +53,7 @@ export class UserEntity {
     private _guardianEmail: string | null,
     private _address: string | null,
     private readonly _createdAt: Date,
-    private _updatedAt: Date
+    private _updatedAt: Date,
   ) {}
 
   /**
@@ -64,12 +64,13 @@ export class UserEntity {
    */
   static async create(
     props: CreateUserProps,
-    hasher: PasswordHasher
+    hasher: PasswordHasher,
   ): Promise<UserEntity> {
     const now = new Date();
     const validatedPassword = validatePassword(props.password);
     const passwordHash = await hasher.hash(validatedPassword);
-    return new UserEntity(0,
+    return new UserEntity(
+      0,
       normalizeEmail(props.email),
       passwordHash,
       props.role ?? "student",
@@ -81,7 +82,7 @@ export class UserEntity {
       normalizeEmailOptional(props.guardianEmail),
       props.address?.trim() || null,
       now,
-      now
+      now,
     );
   }
 
@@ -103,7 +104,7 @@ export class UserEntity {
       props.guardianEmail ?? null,
       props.address ?? null,
       props.createdAt,
-      props.updatedAt
+      props.updatedAt,
     );
   }
 
@@ -163,7 +164,7 @@ export class UserEntity {
    */
   async changePassword(
     plainPassword: string,
-    hasher: PasswordHasher
+    hasher: PasswordHasher,
   ): Promise<void> {
     const validated = validatePassword(plainPassword);
     this._passwordHash = await hasher.hash(validated);
@@ -178,7 +179,7 @@ export class UserEntity {
     if (!hashed) throw new Error("Password hash cannot be empty");
     if (!hashed.startsWith("$2")) {
       throw new Error(
-        "Provided value is not a bcrypt hash (expected format $2a$/$2b$/$2y$)"
+        "Provided value is not a bcrypt hash (expected format $2a$/$2b$/$2y$)",
       );
     }
     this._passwordHash = hashed;
@@ -191,7 +192,7 @@ export class UserEntity {
    */
   async verifyPassword(
     plainPassword: string,
-    hasher: PasswordHasher
+    hasher: PasswordHasher,
   ): Promise<boolean> {
     if (!plainPassword) return false;
     return await hasher.verify(plainPassword, this._passwordHash);
@@ -247,4 +248,3 @@ export class UserEntity {
     };
   }
 }
-

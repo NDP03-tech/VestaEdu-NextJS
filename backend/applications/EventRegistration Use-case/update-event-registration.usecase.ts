@@ -1,0 +1,1 @@
+export { UpdateEventRegistrationUseCase } from "./index";

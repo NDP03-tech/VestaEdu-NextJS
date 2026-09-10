@@ -50,7 +50,7 @@ const validProps = {
   // ===== Group 1: getters (Bug #2) =====
   console.log("\n=== Bug #2: Getters ===");
   const blog = BlogEntity.create(validProps);
-  expectEquals("get id (UUID)", /^[0-9a-f-]{36}$/.test(blog.id), true);
+  expectEquals("get id (integer)", Number.isInteger(blog.id), true);
   expectEquals("get title", blog.title, "Hello");
   expectEquals("get image", blog.image, "cover.jpg");
   expectEquals("get bannerImg", blog.bannerImg, "banner.jpg");
@@ -143,12 +143,12 @@ const validProps = {
   // ===== Group 8: reconstitute =====
   console.log("\n=== reconstitute ===");
   const b8 = BlogEntity.reconstitute({
-    id: "fixed-id-123",
+    id: 123,
     title: "t", bannerImg: "b", author: "a", authorImg: "ai", content: "c",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-02"),
   });
-  expectEquals("reconstitute giu id", b8.id, "fixed-id-123");
+  expectEquals("reconstitute giu id", b8.id, 123);
   expectEquals("reconstitute giu createdAt", b8.createdAt.toISOString(), "2024-01-01T00:00:00.000Z");
   expectEquals("reconstitute giu updatedAt", b8.updatedAt.toISOString(), "2024-01-02T00:00:00.000Z");
 

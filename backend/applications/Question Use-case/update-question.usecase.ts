@@ -1,0 +1,1 @@
+export { UpdateQuestionUseCase } from "./index";

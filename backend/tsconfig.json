@@ -19,7 +19,8 @@
     "domain/**/*.ts",
     "infrastructure/**/*.ts",
     "config/**/*.ts",
-    "utils/**/*.ts"
+    "utils/**/*.ts",
+    "applications/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

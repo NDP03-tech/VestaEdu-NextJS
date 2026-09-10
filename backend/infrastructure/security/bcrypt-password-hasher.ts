@@ -14,7 +14,7 @@
  *     dùng instance method trên entity để setHashedPassword trước khi save.
  */
 import bcrypt from "bcryptjs";
-import type { PasswordHasher } from "../../domain/ports/password-hasher.port";
+import type { PasswordHasher } from "../../domain/repositories/password-hasher.interface";
 
 /** Cost factor mặc định - giữ nguyên với models/User.js */
 const DEFAULT_SALT_ROUNDS = 10;

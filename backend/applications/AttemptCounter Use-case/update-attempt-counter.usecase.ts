@@ -1,0 +1,1 @@
+export { UpdateAttemptCounterUseCase } from "./index";

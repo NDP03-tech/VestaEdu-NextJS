@@ -13,9 +13,9 @@ interface BlogProps {
   updatedAt: Date;
 }
 
-interface CreateBlogProps {
+export interface CreateBlogProps {
   title: string;
-  image?: string;
+  image?: string | null;
   bannerImg: string;
   author: string;
   authorImg: string;

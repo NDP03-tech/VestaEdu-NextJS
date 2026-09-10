@@ -11,10 +11,10 @@
  *   await user.verifyPassword("input", passwordHasher);
  */
 import { BcryptPasswordHasher } from "./bcrypt-password-hasher";
-import type { PasswordHasher } from "../../domain/ports/password-hasher.port";
+import type { PasswordHasher } from "../../domain/repositories/password-hasher.interface";
 
 export { BcryptPasswordHasher } from "./bcrypt-password-hasher";
-export type { PasswordHasher } from "../../domain/ports/password-hasher.port";
+export type { PasswordHasher } from "../../domain/repositories/password-hasher.interface";
 
 /** Singleton instance - dùng mặc định trong toàn bộ app */
 export const passwordHasher: PasswordHasher = new BcryptPasswordHasher();

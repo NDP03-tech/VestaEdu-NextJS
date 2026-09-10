@@ -1,0 +1,1 @@
+export { CreateQuestionUseCase } from "./index";

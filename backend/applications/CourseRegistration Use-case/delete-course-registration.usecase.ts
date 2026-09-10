@@ -1,0 +1,1 @@
+export { DeleteCourseRegistrationUseCase } from "./index";

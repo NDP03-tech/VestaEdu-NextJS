@@ -1,0 +1,1 @@
+export { DeleteUserQuizResultUseCase } from "./index";

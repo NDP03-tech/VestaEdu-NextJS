@@ -1,0 +1,1 @@
+export { CreateQuizUseCase } from "./index";
