@@ -13,14 +13,19 @@
     "declaration": false,
     "sourceMap": false,
     "moduleResolution": "node",
-    "types": ["node"]
+    "types": ["node"],
+
+    // ✅ Bắt buộc cho TypeORM decorator
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "domain/**/*.ts",
     "infrastructure/**/*.ts",
     "config/**/*.ts",
     "utils/**/*.ts",
-    "applications/**/*.ts"
+    "applications/**/*.ts",
+    "models/**/*.ts" // ✅ thêm dòng này nếu bạn vẫn để entity trong models/
   ],
   "exclude": ["node_modules", "dist"]
 }
