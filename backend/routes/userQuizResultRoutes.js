@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const userQuizResultController = require("../controllers/userQuizResultController");
 const authenticateToken = require("../middleware/authenticateToken");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 // ========================================
 // 🔐 GLOBAL AUTHENTICATION MIDDLEWARE
@@ -43,19 +44,22 @@ router.get("/user/results-stats", userQuizResultController.getUserResultsStats);
 // Lấy best attempts của TẤT CẢ users cho 1 quiz (Admin/Teacher view)
 router.get(
   "/quiz/:quizId/best-attempts",
-  userQuizResultController.getUsersBestAttemptsByQuiz
+  authorizeRoles("admin", "teacher"),
+  userQuizResultController.getUsersBestAttemptsByQuiz,
 );
 
 // Lấy best attempt của 1 user cụ thể cho 1 quiz cụ thể (Chi tiết từng câu)
 router.get(
   "/user/:userId/quiz/:quizId/best-attempt",
-  userQuizResultController.getUserQuizBestAttempt
+  authorizeRoles("admin", "teacher"),
+  userQuizResultController.getUserQuizBestAttempt,
 );
 
 // Lấy tổng hợp kết quả của 1 user theo tất cả quizzes
 router.get(
   "/user-summary/:userId",
-  userQuizResultController.getUserQuizSummaryByUserId
+  authorizeRoles("admin", "teacher"),
+  userQuizResultController.getUserQuizSummaryByUserId,
 );
 
 // ========================================
@@ -67,14 +71,15 @@ router.get(
 // 👉 Sử dụng bởi: AssignedQuizzes.jsx
 router.get(
   "/best-attempts/:quizId",
-  userQuizResultController.getBestAttemptsByQuiz
+  userQuizResultController.getBestAttemptsByQuiz,
 );
 
 // Lấy TẤT CẢ best attempts của 1 user cụ thể (qua tất cả quizzes)
 // 👉 Khác với route trên: userId thay vì quizId
 router.get(
   "/user-best-attempts/:userId",
-  userQuizResultController.getBestAttemptsByUserId
+  authorizeRoles("admin", "teacher"),
+  userQuizResultController.getBestAttemptsByUserId,
 );
 
 module.exports = router;

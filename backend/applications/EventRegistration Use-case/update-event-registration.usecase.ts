@@ -10,14 +10,11 @@ import {
 export class UpdateEventRegistrationUseCase {
   constructor(private readonly repository: eventRegistrationRepository) {}
 
-  async execute(
-    id: EntityId,
-    update: UpdateEventRegistration,
-  ): Promise<void> {
+  async execute(id: EntityId, update: UpdateEventRegistration): Promise<void> {
     const key = normalizeEntityId(id, "EventRegistration");
     const entity = await this.repository.getById(key);
     if (!entity) throw notFound("EventRegistration", id);
     update(entity);
-    await this.repository.update(key);
+    await this.repository.update(key, entity);
   }
 }

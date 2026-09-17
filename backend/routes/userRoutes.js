@@ -50,6 +50,10 @@ router.post("/logout", userController.logout);
 router.get("/me", authenticateToken, userController.me);
 
 // Lấy quiz cho người dùng cụ thể
-router.get("/:userId/quizzes", userController.getQuizzesForUser);
+router.get(
+  "/:userId/quizzes",
+  authenticateToken,
+  userController.getQuizzesForUser,
+);
 
 module.exports = router;

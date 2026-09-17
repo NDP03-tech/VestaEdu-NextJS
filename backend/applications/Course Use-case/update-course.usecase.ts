@@ -31,6 +31,6 @@ export class UpdateCourseUseCase {
     } catch (error) {
       throw asInputValidationError(error);
     }
-    await this.courseRepository.update(normalizedId);
+    await this.courseRepository.update(normalizedId, course);
   }
 }

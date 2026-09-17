@@ -10,7 +10,7 @@ export class RotateRefreshTokenUseCase {
     if (!stored || !stored.isActive())
       throw new Error("Invalid or expired refresh token");
     stored.revoke();
-    await this.repository.update(String(stored.id));
+    await this.repository.update(stored.id, stored);
     return {
       accessToken: await this.tokens.issueAccessToken({
         id: stored.userId,

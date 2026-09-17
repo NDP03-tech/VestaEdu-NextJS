@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "commonjs",
+    "module": "Node16",
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./",
@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "declaration": false,
     "sourceMap": false,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "types": ["node"],
 
     // ✅ Bắt buộc cho TypeORM decorator
@@ -20,12 +20,13 @@
     "emitDecoratorMetadata": true
   },
   "include": [
+    "index.ts",
     "domain/**/*.ts",
     "infrastructure/**/*.ts",
     "config/**/*.ts",
     "utils/**/*.ts",
     "applications/**/*.ts",
-    "models/**/*.ts" // ✅ thêm dòng này nếu bạn vẫn để entity trong models/
+    "infrastructure/persistence/**/*.ts" // ✅ thêm dòng này nếu bạn vẫn để entity trong models/
   ],
   "exclude": ["node_modules", "dist"]
 }

@@ -15,6 +15,6 @@ export class UpdateQuizUseCase {
     const entity = await this.repository.getById(key);
     if (!entity) throw notFound("Quiz", id);
     update(entity);
-    await this.repository.update(key);
+    await this.repository.update(key, entity);
   }
 }

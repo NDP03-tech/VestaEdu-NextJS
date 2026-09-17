@@ -2,10 +2,10 @@ import { BlogEntity } from "../entities";
 
 export interface BlogRepository {
   create(blog: BlogEntity): Promise<BlogEntity>;
-  getById(id: string): Promise<BlogEntity | null>;
+  getById(id: number): Promise<BlogEntity | null>;
   getAll(): Promise<BlogEntity[]>;
-  update(id: string, blog: BlogEntity): Promise<BlogEntity>;
-  delete(id: string): Promise<void>;
+  update(id: number, blog: BlogEntity): Promise<BlogEntity>;
+  delete(id: number): Promise<void>;
 }
 
 /**

@@ -10,14 +10,11 @@ import {
 export class UpdateCourseRegistrationUseCase {
   constructor(private readonly repository: courseRegistrationRepository) {}
 
-  async execute(
-    id: EntityId,
-    update: UpdateCourseRegistration,
-  ): Promise<void> {
+  async execute(id: EntityId, update: UpdateCourseRegistration): Promise<void> {
     const key = normalizeEntityId(id, "CourseRegistration");
     const entity = await this.repository.getById(key);
     if (!entity) throw notFound("CourseRegistration", id);
     update(entity);
-    await this.repository.update(key);
+    await this.repository.update(key, entity);
   }
 }

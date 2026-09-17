@@ -1,9 +1,9 @@
 import { QuestionEntity } from "../entities";
 
 export interface questionRepository {
-  delete(id: string): Promise<void>;
+  delete(id: string | number): Promise<void>;
   create(question: QuestionEntity): Promise<void>;
-  getById(id: string): Promise<QuestionEntity | null>;
+  getById(id: string | number): Promise<QuestionEntity | null>;
   getAll(): Promise<QuestionEntity[] | null>;
-  update(id: string): Promise<void>;
+  update(id: string | number, question: QuestionEntity): Promise<void>;
 }

@@ -23,6 +23,6 @@ export class SubmitAttemptUseCase {
       answers,
       quiz.passingScore,
     );
-    await this.results.update(key);
+    await this.results.update(key, result);
   }
 }

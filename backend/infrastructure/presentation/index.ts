@@ -1,0 +1,18 @@
+export { createCrudControllers } from "./composition-root";
+export { CrudController } from "./controllers/crud.controller";
+export { BlogController as BlogControllers } from "./controllers/BlogControllers";
+export { CategoryController } from "./controllers/categoryController";
+export { CourseController } from "./controllers/CourseController";
+export { EventController } from "./controllers/EventController";
+export { CourseRegistrationController } from "./controllers/courseRegistrationController";
+export { EventRegistrationController } from "./controllers/eventRegistrationController";
+export { InstructorController } from "./controllers/instructorController";
+export { QuestionController } from "./controllers/QuestionController";
+export { QuizController } from "./controllers/QuizController";
+export { UserController } from "./controllers/userController";
+export { ClassController } from "./controllers/classController";
+export { UserQuizResultController } from "./controllers/userQuizResultController";
+export { AssignedQuizController } from "./controllers/assignedQuizController";
+export { DashboardController } from "./controllers/dashboardController";
+export { createCrudRouter } from "./routes/crud.routes";
+export { createPresentationRoutes } from "./routes";

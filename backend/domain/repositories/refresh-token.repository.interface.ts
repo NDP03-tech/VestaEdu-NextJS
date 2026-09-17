@@ -1,9 +1,9 @@
 import { RefreshTokenEntity } from "../entities";
 
 export interface refreshTokenRepository {
-  delete(id: string): Promise<void>;
+  delete(id: string | number): Promise<void>;
   create(refreshToken: RefreshTokenEntity): Promise<void>;
-  getById(id: string): Promise<RefreshTokenEntity | null>;
+  getById(id: string | number): Promise<RefreshTokenEntity | null>;
   getAll(): Promise<RefreshTokenEntity[] | null>;
-  update(id: string): Promise<void>;
+  update(id: string | number, token: RefreshTokenEntity): Promise<void>;
 }

@@ -38,6 +38,6 @@ export class UpdateInstructorUseCase {
     } catch (error) {
       throw asInputValidationError(error);
     }
-    await this.instructorRepository.update(key);
+    await this.instructorRepository.update(key, entity);
   }
 }

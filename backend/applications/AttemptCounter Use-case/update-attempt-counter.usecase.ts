@@ -15,6 +15,6 @@ export class UpdateAttemptCounterUseCase {
     const entity = await this.repository.getById(key);
     if (!entity) throw notFound("AttemptCounter", id);
     update(entity);
-    await this.repository.update(key);
+    await this.repository.update(key, entity);
   }
 }

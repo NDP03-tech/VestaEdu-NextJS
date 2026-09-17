@@ -24,6 +24,6 @@ export class UpdateEventUseCase {
     } catch (error) {
       throw asInputValidationError(error);
     }
-    await this.eventRepository.update(key);
+    await this.eventRepository.update(key, entity);
   }
 }

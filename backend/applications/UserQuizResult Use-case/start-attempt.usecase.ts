@@ -20,7 +20,7 @@ export class StartAttemptUseCase {
       await this.counters.create(counter);
     }
     counter.increment();
-    if (counter.id) await this.counters.update(String(counter.id));
+    if (counter.id) await this.counters.update(counter.id, counter);
     const result = UserQuizResultEntity.create({
       userId,
       quizId,

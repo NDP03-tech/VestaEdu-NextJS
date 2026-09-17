@@ -20,7 +20,7 @@ export interface AttemptQueryRepository {
   getBestByQuiz(quizId: number): Promise<UserQuizResultEntity[]>;
   getBestByUser(userId: number): Promise<UserQuizResultEntity[]>;
   getStats(userId: number): Promise<Record<string, number>>;
-  update(id: string): Promise<void>;
+  update(id: string | number, result: UserQuizResultEntity): Promise<void>;
 }
 
 export interface AttemptDomainQueries {
@@ -34,7 +34,7 @@ export interface AttemptCounterQueries {
     quizId: number,
   ): Promise<AttemptCounterEntity | null>;
   create(counter: AttemptCounterEntity): Promise<void>;
-  update(id: string): Promise<void>;
+  update(id: string | number, counter: AttemptCounterEntity): Promise<void>;
 }
 
 export type RawAttemptAnswer = RawAnswerInput;

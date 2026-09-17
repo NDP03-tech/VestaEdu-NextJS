@@ -53,10 +53,10 @@
     "typeorm": "^1.1.1"
   },
   "scripts": {
-    "start": "node index.js",
+    "start": "npm run build && node index.js",
     "worker": "node queues/worker.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js",
+    "dev": "npm run build && node index.js",
     "migrate": "sequelize-cli db:migrate",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
@@ -69,8 +69,20 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@babel/preset-typescript": "^7.29.7",
+    "@types/express": "^5.0.6",
     "@types/ioredis": "^4.28.10",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.4.1",
-    "nodemon": "^3.1.10"
+    "@types/supertest": "^7.2.1",
+    "babel-jest": "^30.5.1",
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "typescript": "^7.0.2"
   }
 }

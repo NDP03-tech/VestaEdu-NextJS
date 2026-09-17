@@ -1,7 +1,7 @@
 import { BlogInputValidationError } from "./blog.exceptions";
 import type { BlogId, UpdateBlogInput } from "./blog.use-case.interface";
 
-export function normalizeBlogId(id: BlogId): string {
+export function normalizeBlogId(id: BlogId): number {
   const rawValue = typeof id === "number" ? String(id) : id;
   const trimmed = rawValue.trim();
 
@@ -9,7 +9,12 @@ export function normalizeBlogId(id: BlogId): string {
     throw new BlogInputValidationError(`Invalid blog id: ${id}`);
   }
 
-  return trimmed;
+  const normalized = Number(trimmed);
+  if (!Number.isSafeInteger(normalized)) {
+    throw new BlogInputValidationError(`Invalid blog id: ${id}`);
+  }
+
+  return normalized;
 }
 
 export function hasUpdateFields(input: UpdateBlogInput): boolean {

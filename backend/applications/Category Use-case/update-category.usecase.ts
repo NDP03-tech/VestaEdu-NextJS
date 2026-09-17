@@ -36,6 +36,6 @@ export class UpdateCategoryUseCase {
       throw asInputValidationError(error);
     }
 
-    await this.categoryRepository.update(normalizedId);
+    await this.categoryRepository.update(normalizedId, category);
   }
 }

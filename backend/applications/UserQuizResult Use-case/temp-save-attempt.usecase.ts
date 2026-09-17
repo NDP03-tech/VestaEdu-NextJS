@@ -11,6 +11,6 @@ export class TempSaveAttemptUseCase {
     const result = await this.repository.getById(key);
     if (!result) throw new Error(`UserQuizResult ${key} not found`);
     result.tempSave(answers);
-    await this.repository.update(key);
+    await this.repository.update(key, result);
   }
 }

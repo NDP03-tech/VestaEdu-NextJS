@@ -1,0 +1,17 @@
+export { AttemptCounterRepository } from "./attempt-counter.repository";
+export { AuditLogRepository } from "./audit-log.repository";
+export { BlogRepositoryImpl } from "./blog.repository";
+export { CategoryRepository } from "./category.repository";
+export { ClassRepository } from "./class.repository";
+export { CourseRepository } from "./course.repository";
+export { CourseRegistrationRepository } from "./course-registration.repository";
+export { EventRepository } from "./event.repository";
+export { EventRegistrationRepository } from "./event-registration.repository";
+export { InstructorRepository } from "./instructor.repository";
+export { QuestionRepository } from "./question.repository";
+export { QuizRepository } from "./quiz.repository";
+export { RefreshTokenRepository } from "./refresh-token.repository";
+export { UserRepository } from "./user.repository";
+export { UserQuizResultRepository } from "./user-quiz-result.repository";
+export { AssignedQuizTypeOrmRepository } from "./assigned-quiz.repository";
+export { DashboardTypeOrmRepository } from "./dashboard.repository";
