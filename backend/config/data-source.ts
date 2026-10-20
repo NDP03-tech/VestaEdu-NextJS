@@ -16,27 +16,14 @@ import { Quiz } from "../infrastructure/persistence/Quiz";
 import { RefreshToken } from "../infrastructure/persistence/RefreshToken";
 import { User } from "../infrastructure/persistence/User";
 import { UserQuizResult } from "../infrastructure/persistence/UserQuizResult";
-import { AddDomainFields20260917 } from "../infrastructure/migrations/AddDomainFields";
 
 export const DataSourceConfig = new DataSource({
   type: "postgres",
-  replication: {
-    master: {
-      port: Number(process.env.DB_MASTER_PORT) || 5432,
-      host: process.env.DB_MASTER_HOST || "localhost",
-      username: process.env.DB_MASTER_USER || "postgres",
-      password: process.env.DB_MASTER_PASS || undefined,
-      database: process.env.DB_NAME || undefined,
-    },
-    slaves: [
-      {
-        port: Number(process.env.DB_SLAVE1_PORT) || 5433,
-        host: process.env.DB_SLAVE1_HOST || "localhost",
-        username: process.env.DB_SLAVE1_USER || "postgres",
-        password: process.env.DB_SLAVE1_PASS || undefined,
-      },
-    ],
-  },
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT) || 5432,
+  username: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || undefined,
+  database: process.env.DB_NAME || undefined,
   entities: [
     AttemptCounter,
     AuditLog,
@@ -56,13 +43,8 @@ export const DataSourceConfig = new DataSource({
     User,
     UserQuizResult,
   ],
-  migrations: [AddDomainFields20260917],
+  migrations: [],
   synchronize: false,
-  logging: true,
-  ssl: process.env.NODE_ENV === "production" ? true : false,
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
+  logging: process.env.NODE_ENV !== "production",
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });

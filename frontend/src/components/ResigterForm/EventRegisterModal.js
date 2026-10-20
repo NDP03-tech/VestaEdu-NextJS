@@ -1,385 +1,201 @@
 import React, { useState } from "react";
-import { Modal, Form, message } from "antd";
 import axios from "axios";
 import config from "../../config";
+import { Modal } from "../ui/Modal";
+import { Button } from "../ui/Button";
 
-const EventRegisterModal = ({ open, onClose, event }) => {
+export const EventRegisterModal = ({ open, onClose, event = {} }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    note: "",
+  });
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (values) => {
+  const handleChange = (e) => {
+    setError("");
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       await axios.post(`${config.API_URL}/api/event-registrations`, {
-        ...values,
+        ...formData,
         eventId: event.id,
         eventTitle: event.eventTitle || event.title,
       });
-      message.success("Đăng ký thành công!");
-      onClose();
-      form.resetFields();
+      setSubmitted(true);
+      setTimeout(() => {
+        onClose();
+        setFormData({ name: "", email: "", phone: "", note: "" });
+        setSubmitted(false);
+      }, 2200);
     } catch (err) {
       console.error(err);
-      message.error(err.response?.data?.message || "Đăng ký thất bại");
+      setError(
+        err.response?.data?.message || "Đăng ký tham gia sự kiện thất bại. Vui lòng thử lại sau."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = {
-    height: "48px",
-    borderRadius: "10px",
-    border: "1.5px solid #e8e6e0",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: "14px",
-    color: "#1a1a1a",
-    padding: "0 16px",
-    background: "#fafaf8",
-    transition: "all 0.25s ease",
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box",
-  };
-
   return (
-    <>
-      {/* Google Font */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-        .erm-modal .ant-modal-content {
-          border-radius: 24px !important;
-          overflow: hidden !important;
-          padding: 0 !important;
-          box-shadow: 0 32px 80px rgba(13,27,42,0.22) !important;
-        }
-
-        .erm-modal .ant-modal-header {
-          display: none !important;
-        }
-
-        .erm-modal .ant-modal-body {
-          padding: 0 !important;
-        }
-
-        .erm-modal .ant-modal-footer {
-          display: none !important;
-        }
-
-        .erm-modal .ant-modal-close {
-          top: 20px !important;
-          right: 20px !important;
-          color: rgba(255,255,255,0.6) !important;
-          transition: color 0.2s !important;
-        }
-
-        .erm-modal .ant-modal-close:hover {
-          color: #f0c96a !important;
-          background: transparent !important;
-        }
-
-        .erm-modal .ant-form-item {
-          margin-bottom: 20px !important;
-        }
-
-        .erm-modal .ant-form-item-label > label {
-          font-family: 'DM Sans', sans-serif !important;
-          font-size: 11px !important;
-          font-weight: 600 !important;
-          letter-spacing: 2px !important;
-          text-transform: uppercase !important;
-          color: #a0a0a0 !important;
-        }
-
-        .erm-modal .ant-form-item-explain-error {
-          font-family: 'DM Sans', sans-serif !important;
-          font-size: 12px !important;
-          margin-top: 4px !important;
-        }
-
-        .erm-input:focus,
-        .erm-input:hover {
-          border-color: #d4a843 !important;
-          background: #ffffff !important;
-          box-shadow: 0 0 0 3px rgba(212,168,67,0.12) !important;
-        }
-      `}</style>
-
-      <Modal
-        open={open}
-        onCancel={onClose}
-        footer={null}
-        centered
-        zIndex={2000}
-        className="erm-modal"
-        width={480}
-      >
-        {/* ── Header (navy gradient) ── */}
-        <div
-          style={{
-            background:
-              "linear-gradient(145deg, #0d1b2a 0%, #16213e 55%, #1e3a5f 100%)",
-            padding: "40px 40px 36px",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Decorative ring */}
-          <div
-            style={{
-              position: "absolute",
-              top: "-60px",
-              right: "-60px",
-              width: "200px",
-              height: "200px",
-              borderRadius: "50%",
-              border: "1.5px solid rgba(212,168,67,0.15)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: "-30px",
-              left: "-30px",
-              width: "130px",
-              height: "130px",
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* Badge */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(212,168,67,0.18)",
-              border: "1px solid rgba(212,168,67,0.4)",
-              borderRadius: "100px",
-              padding: "5px 14px",
-              marginBottom: "14px",
-            }}
-          >
-            <span
-              style={{
-                width: "5px",
-                height: "5px",
-                borderRadius: "50%",
-                background: "#f0c96a",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "10px",
-                fontWeight: "600",
-                letterSpacing: "2.5px",
-                textTransform: "uppercase",
-                color: "#f0c96a",
-              }}
-            >
-              Event Registration
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Đăng ký tham gia sự kiện"
+      maxWidth="max-w-xl"
+    >
+      {/* Event Details Card */}
+      <div className="mb-6 rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 p-5 text-white shadow-lg">
+        <span className="text-[11px] font-semibold tracking-widest text-amber-400 uppercase block mb-1">
+          Sự kiện đặc biệt
+        </span>
+        <h4 className="text-lg font-bold text-white mb-2 leading-snug">
+          {event?.eventTitle || event?.title || "Sự kiện Vesta"}
+        </h4>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-2 border-t border-white/10">
+          {(event?.eventDate || event?.date) && (
+            <span className="flex items-center gap-1.5">
+              📅 {event.eventDate || event.date}
             </span>
+          )}
+          {(event?.eventTime || event?.time) && (
+            <span className="flex items-center gap-1.5">
+              ⏰ {event.eventTime || event.time}
+            </span>
+          )}
+          {(event?.eventLocation || event?.location) && (
+            <span className="flex items-center gap-1.5">
+              📍 {event.eventLocation || event.location}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {submitted ? (
+        /* Success screen */
+        <div className="flex flex-col items-center py-6 text-center animate-fade-in">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <svg
+              className="h-8 w-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polyline
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points="20 6 9 17 4 12"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Đăng ký tham gia thành công!</h3>
+          <p className="text-sm text-slate-500 max-w-sm">
+            Vé mời và thông tin chi tiết sẽ được gửi qua email của bạn. Hẹn gặp lại bạn tại sự kiện!
+          </p>
+        </div>
+      ) : (
+        /* Event Register Form */
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Full Name */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+              Họ và tên <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              required
+              placeholder="Nguyễn Văn A"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+            />
           </div>
 
-          {/* Title */}
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.65rem",
-              fontWeight: "700",
-              color: "#ffffff",
-              lineHeight: 1.25,
-              margin: 0,
-              letterSpacing: "-0.3px",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            {event?.eventTitle || event?.title}
-          </h2>
-
-          {/* Gold line */}
-          <div
-            style={{
-              width: "40px",
-              height: "2px",
-              background: "linear-gradient(90deg, #f0c96a, #d4a843)",
-              borderRadius: "2px",
-              marginTop: "16px",
-            }}
-          />
-        </div>
-
-        {/* ── Form body ── */}
-        <div
-          style={{
-            padding: "36px 40px 40px",
-            background: "#fafaf8",
-          }}
-        >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            {/* Họ và tên */}
-            <Form.Item
-              label="Họ và tên"
-              name="name"
-              rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
-            >
-              <input
-                className="erm-input"
-                placeholder="Nguyễn Văn A"
-                style={inputStyle}
-                onChange={(e) => form.setFieldValue("name", e.target.value)}
-              />
-            </Form.Item>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Email */}
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  type: "email",
-                  message: "Email không hợp lệ",
-                },
-              ]}
-            >
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                Email <span className="text-red-500">*</span>
+              </label>
               <input
-                className="erm-input"
-                placeholder="example@email.com"
                 type="email"
-                style={inputStyle}
-                onChange={(e) => form.setFieldValue("email", e.target.value)}
+                name="email"
+                required
+                placeholder="email@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               />
-            </Form.Item>
+            </div>
 
-            {/* Số điện thoại */}
-            <Form.Item
-              label="Số điện thoại"
-              name="phone"
-              rules={[
-                { required: true, message: "Vui lòng nhập số điện thoại" },
-              ]}
-            >
+            {/* Phone */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
               <input
-                className="erm-input"
-                placeholder="0901 234 567"
                 type="tel"
-                style={inputStyle}
-                onChange={(e) => form.setFieldValue("phone", e.target.value)}
+                name="phone"
+                required
+                placeholder="0912 345 678"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               />
-            </Form.Item>
+            </div>
+          </div>
 
-            {/* Divider */}
-            <div
-              style={{
-                height: "1px",
-                background:
-                  "linear-gradient(90deg, #d4a843, #e8e6e0 60%, transparent)",
-                margin: "8px 0 28px",
-              }}
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+              Ghi chú thêm (Tuỳ chọn)
+            </label>
+            <textarea
+              name="note"
+              rows={2}
+              placeholder="Bạn có câu hỏi nào gửi tới ban tổ chức không?"
+              value={formData.note}
+              onChange={handleChange}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
             />
+          </div>
 
-            {/* Submit button */}
-            <button
-              type="button"
-              onClick={() => form.submit()}
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "16px 24px",
-                background: loading
-                  ? "rgba(13,27,42,0.5)"
-                  : "linear-gradient(135deg, #f0c96a 0%, #d4a843 100%)",
-                border: "none",
-                borderRadius: "12px",
-                color: "#0d1b2a",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "14px",
-                fontWeight: "700",
-                letterSpacing: "1.8px",
-                textTransform: "uppercase",
-                cursor: loading ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                transition: "all 0.3s ease",
-                boxShadow: loading
-                  ? "none"
-                  : "0 8px 28px rgba(212,168,67,0.38)",
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 14px 40px rgba(212,168,67,0.52)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 8px 28px rgba(212,168,67,0.38)";
-              }}
-            >
-              {loading ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  >
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                  </svg>
-                  Đang gửi...
-                </>
-              ) : (
-                <>
-                  Gửi đăng ký
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                </>
-              )}
-            </button>
+          {/* Error Message */}
+          {error && (
+            <div className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-600 flex items-center gap-2 border border-red-100">
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
 
-            {/* Note */}
-            <p
-              style={{
-                textAlign: "center",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: "12px",
-                color: "#a0a0a0",
-                marginTop: "16px",
-                marginBottom: 0,
-              }}
-            >
-              Thông tin của bạn được bảo mật tuyệt đối 🔒
-            </p>
-          </Form>
-        </div>
-      </Modal>
-    </>
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            isLoading={loading}
+            className="w-full py-3 mt-2 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 transition-all"
+          >
+            Xác nhận tham gia
+          </Button>
+
+          <p className="text-center text-xs text-slate-400 pt-1">
+            🔒 Thông tin của bạn được cam kết bảo mật 100%
+          </p>
+        </form>
+      )}
+    </Modal>
   );
 };
 

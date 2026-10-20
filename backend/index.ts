@@ -18,6 +18,27 @@ import {
   createCrudRouter,
   type CrudRouteOptions,
 } from "./infrastructure/presentation/routes/crud.routes";
+import { createPresentationRoutes } from "./infrastructure/presentation/routes";
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocument } from "./infrastructure/presentation/docs/swagger";
+import { auditLogMiddleware } from "./middleware/auditLog";
+import { validateRequest } from "./middleware/validateRequest";
+import {
+  CreateBlogSchema,
+  UpdateBlogSchema,
+  CreateCategorySchema,
+  UpdateCategorySchema,
+  CreateCourseSchema,
+  UpdateCourseSchema,
+  CreateEventSchema,
+  UpdateEventSchema,
+  CreateCourseRegistrationSchema,
+  CreateEventRegistrationSchema,
+  CreateInstructorSchema,
+  UpdateInstructorSchema,
+  LoginSchema,
+  RegisterSchema,
+} from "./infrastructure/presentation/validation/schemas";
 const authenticateToken: express.RequestHandler = require(
   path.join(__dirname, "..", "middleware", "authenticateToken"),
 );
@@ -81,6 +102,9 @@ app.get("/health", (_request: express.Request, response: express.Response) => {
     .json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
+app.use(auditLogMiddleware);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 async function start(): Promise<void> {
   await initializeTypeOrm();
   const repositories = createTypeOrmRepositories();
@@ -106,7 +130,20 @@ async function start(): Promise<void> {
       .json({ message: "You cannot access another user's data" });
   };
 
-  app.use("/api/blog", createCrudRouter(controllers.blog, contentWriteAccess));
+  app.use(
+    "/api/blog",
+    createCrudRouter(controllers.blog, {
+      ...contentWriteAccess,
+      createMiddleware: [
+        ...(contentWriteAccess.createMiddleware ?? []),
+        validateRequest({ body: CreateBlogSchema }),
+      ],
+      updateMiddleware: [
+        ...(contentWriteAccess.updateMiddleware ?? []),
+        validateRequest({ body: UpdateBlogSchema }),
+      ],
+    }),
+  );
   app.get(
     "/api/categories/:categoryId/quizzes",
     async (
@@ -132,16 +169,44 @@ async function start(): Promise<void> {
     createCrudRouter(controllers.category, {
       ...contentWriteAccess,
       createPath: "/",
+      createMiddleware: [
+        ...(contentWriteAccess.createMiddleware ?? []),
+        validateRequest({ body: CreateCategorySchema }),
+      ],
+      updateMiddleware: [
+        ...(contentWriteAccess.updateMiddleware ?? []),
+        validateRequest({ body: UpdateCategorySchema }),
+      ],
       deleteMiddleware: [authenticateToken, authorizeRoles("admin")],
     }),
   );
   app.use(
     "/api/course",
-    createCrudRouter(controllers.course, contentWriteAccess),
+    createCrudRouter(controllers.course, {
+      ...contentWriteAccess,
+      createMiddleware: [
+        ...(contentWriteAccess.createMiddleware ?? []),
+        validateRequest({ body: CreateCourseSchema }),
+      ],
+      updateMiddleware: [
+        ...(contentWriteAccess.updateMiddleware ?? []),
+        validateRequest({ body: UpdateCourseSchema }),
+      ],
+    }),
   );
   app.use(
     "/api/events",
-    createCrudRouter(controllers.event, contentWriteAccess),
+    createCrudRouter(controllers.event, {
+      ...contentWriteAccess,
+      createMiddleware: [
+        ...(contentWriteAccess.createMiddleware ?? []),
+        validateRequest({ body: CreateEventSchema }),
+      ],
+      updateMiddleware: [
+        ...(contentWriteAccess.updateMiddleware ?? []),
+        validateRequest({ body: UpdateEventSchema }),
+      ],
+    }),
   );
   app.use(
     "/api/course-registrations",
@@ -172,6 +237,14 @@ async function start(): Promise<void> {
     createCrudRouter(controllers.instructor, {
       createPath: "/",
       ...adminWriteAccess,
+      createMiddleware: [
+        ...(adminWriteAccess.createMiddleware ?? []),
+        validateRequest({ body: CreateInstructorSchema }),
+      ],
+      updateMiddleware: [
+        ...(adminWriteAccess.updateMiddleware ?? []),
+        validateRequest({ body: UpdateInstructorSchema }),
+      ],
     }),
   );
   app.use(
@@ -191,8 +264,8 @@ async function start(): Promise<void> {
     }),
   );
 
-  app.post("/api/login", workflows.userController.login as never);
-  app.post("/api/register", workflows.userController.register as never);
+  app.post("/api/login", validateRequest({ body: LoginSchema }), workflows.userController.login as never);
+  app.post("/api/register", validateRequest({ body: RegisterSchema }), workflows.userController.register as never);
   app.post(
     "/api/create-admin",
     authenticateToken,

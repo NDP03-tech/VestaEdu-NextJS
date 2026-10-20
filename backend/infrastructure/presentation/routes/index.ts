@@ -1,6 +1,11 @@
 import { createCrudRouter } from "./crud.routes";
 import type { ReturnTypeOfCreateCrudControllers } from "../types";
 
+/**
+ * Helper to create all CRUD presentation routes at once.
+ * Currently unused - routes are wired manually in index.ts for custom middleware per resource.
+ * Kept for reference / future refactoring.
+ */
 export function createPresentationRoutes(
   controllers: ReturnTypeOfCreateCrudControllers,
 ) {

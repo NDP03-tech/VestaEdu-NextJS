@@ -11,7 +11,7 @@ import { buildTestApp, makeToken } from "./__mocks__/app.factory";
 // ─── Setup ────────────────────────────────────────────────────────────────────
 const { app } = buildTestApp();
 
-const adminToken = makeToken("admin");
+const adminToken   = makeToken("admin");
 const teacherToken = makeToken("teacher");
 const studentToken = makeToken("student");
 
@@ -34,46 +34,34 @@ describe("Health", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("User API — Auth", () => {
   test("POST /api/login — valid credentials → 200 + accessToken", async () => {
-    const res = await request(app)
-      .post("/api/login")
-      .send({ email: "admin@test.com", password: "Admin@1234" });
+    const res = await request(app).post("/api/login").send({ email: "admin@test.com", password: "Admin@1234" });
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("accessToken");
   });
 
   test("POST /api/login — wrong password → 401", async () => {
-    const res = await request(app)
-      .post("/api/login")
-      .send({ email: "admin@test.com", password: "wrong" });
+    const res = await request(app).post("/api/login").send({ email: "admin@test.com", password: "wrong" });
     expect(res.status).toBe(401);
   });
 
   test("POST /api/register — valid data → 201", async () => {
-    const res = await request(app)
-      .post("/api/register")
-      .send({ email: "new@test.com", password: "Pass@1234", role: "student" });
+    const res = await request(app).post("/api/register").send({ email: "new@test.com", password: "Pass@1234", role: "student" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/register — missing fields → 400", async () => {
-    const res = await request(app)
-      .post("/api/register")
-      .send({ email: "x@test.com" });
+    const res = await request(app).post("/api/register").send({ email: "x@test.com" });
     expect(res.status).toBe(400);
   });
 
   test("POST /api/refresh — valid refreshToken → 200 + accessToken", async () => {
-    const res = await request(app)
-      .post("/api/refresh")
-      .send({ refreshToken: "fake-refresh-token" });
+    const res = await request(app).post("/api/refresh").send({ refreshToken: "fake-refresh-token" });
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("accessToken");
   });
 
   test("POST /api/logout → 200", async () => {
-    const res = await request(app)
-      .post("/api/logout")
-      .send({ refreshToken: "fake-refresh-token" });
+    const res = await request(app).post("/api/logout").send({ refreshToken: "fake-refresh-token" });
     expect(res.status).toBe(200);
   });
 
@@ -91,18 +79,14 @@ describe("User API — Auth", () => {
 
 describe("User API — Admin CRUD", () => {
   test("POST /api/create-admin — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/create-admin")
-      .set(auth(adminToken))
-      .send({ email: "newadmin@test.com", password: "Admin@1234" });
+    const res = await request(app).post("/api/create-admin")
+      .set(auth(adminToken)).send({ email: "newadmin@test.com", password: "Admin@1234" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/create-admin — teacher → 403", async () => {
-    const res = await request(app)
-      .post("/api/create-admin")
-      .set(auth(teacherToken))
-      .send({ email: "x@test.com", password: "Pass@123" });
+    const res = await request(app).post("/api/create-admin")
+      .set(auth(teacherToken)).send({ email: "x@test.com", password: "Pass@123" });
     expect(res.status).toBe(403);
   });
 
@@ -123,18 +107,14 @@ describe("User API — Admin CRUD", () => {
   });
 
   test("POST /api/users — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/users")
-      .set(auth(adminToken))
-      .send({ email: "u@test.com", password: "Pass@1234", role: "student" });
+    const res = await request(app).post("/api/users")
+      .set(auth(adminToken)).send({ email: "u@test.com", password: "Pass@1234", role: "student" });
     expect(res.status).toBe(201);
   });
 
   test("PUT /api/users/1 — admin → 200", async () => {
-    const res = await request(app)
-      .put("/api/users/1")
-      .set(auth(adminToken))
-      .send({ firstName: "Updated" });
+    const res = await request(app).put("/api/users/1")
+      .set(auth(adminToken)).send({ firstName: "Updated" });
     expect(res.status).toBe(200);
   });
 
@@ -166,51 +146,28 @@ describe("Blog API", () => {
   });
 
   test("POST /api/blog/create — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/blog/create")
+    const res = await request(app).post("/api/blog/create")
       .set(auth(adminToken))
-      .send({
-        title: "New Blog",
-        author: "Admin",
-        authorImg: "/a.jpg",
-        bannerImg: "/b.jpg",
-        content: "Hello world",
-      });
+      .send({ title: "New Blog", author: "Admin", authorImg: "/a.jpg", bannerImg: "/b.jpg", content: "Hello world" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/blog/create — no token → 401", async () => {
-    const res = await request(app)
-      .post("/api/blog/create")
-      .send({
-        title: "Blog",
-        author: "X",
-        authorImg: "/a.jpg",
-        bannerImg: "/b.jpg",
-        content: "Hi",
-      });
+    const res = await request(app).post("/api/blog/create")
+      .send({ title: "Blog", author: "X", authorImg: "/a.jpg", bannerImg: "/b.jpg", content: "Hi" });
     expect(res.status).toBe(401);
   });
 
   test("POST /api/blog/create — student → 403", async () => {
-    const res = await request(app)
-      .post("/api/blog/create")
+    const res = await request(app).post("/api/blog/create")
       .set(auth(studentToken))
-      .send({
-        title: "Blog",
-        author: "X",
-        authorImg: "/a.jpg",
-        bannerImg: "/b.jpg",
-        content: "Hi",
-      });
+      .send({ title: "Blog", author: "X", authorImg: "/a.jpg", bannerImg: "/b.jpg", content: "Hi" });
     expect(res.status).toBe(403);
   });
 
   test("PUT /api/blog/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .put("/api/blog/1")
-      .set(auth(teacherToken))
-      .send({ title: "Updated" });
+    const res = await request(app).put("/api/blog/1")
+      .set(auth(teacherToken)).send({ title: "Updated" });
     expect(res.status).toBe(200);
   });
 
@@ -235,44 +192,27 @@ describe("Course API", () => {
   });
 
   test("POST /api/course/create — teacher → 201", async () => {
-    const res = await request(app)
-      .post("/api/course/create")
+    const res = await request(app).post("/api/course/create")
       .set(auth(teacherToken))
-      .send({
-        name: "New Course",
-        title: "T",
-        author: "A",
-        image: "/i.jpg",
-        lesson: "10",
-        price: "free",
-        duration: "1m",
-        type: "online",
-        language: "vi",
-        content: "...",
-        dis: "...",
-      });
+      .send({ name: "New Course", title: "T", author: "A", image: "/i.jpg",
+        lesson: "10", price: "free", duration: "1m", type: "online", language: "vi",
+        content: "...", dis: "..." });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/course/create — no token → 401", async () => {
-    const res = await request(app)
-      .post("/api/course/create")
-      .send({ name: "X" });
+    const res = await request(app).post("/api/course/create").send({ name: "X" });
     expect(res.status).toBe(401);
   });
 
   test("PUT /api/course/1 — admin → 200", async () => {
-    const res = await request(app)
-      .put("/api/course/1")
-      .set(auth(adminToken))
-      .send({ name: "Updated" });
+    const res = await request(app).put("/api/course/1")
+      .set(auth(adminToken)).send({ name: "Updated" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/course/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/course/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/course/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -292,45 +232,28 @@ describe("Event API", () => {
   });
 
   test("POST /api/events/create — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/events/create")
+    const res = await request(app).post("/api/events/create")
       .set(auth(adminToken))
-      .send({
-        title: "Event A",
-        image: "/i.jpg",
-        bannerImg: "/b.jpg",
-        date: "2026-12-01",
-        startTime: "09:00",
-        category: "English",
-        location: "HCM",
-        cost: "free",
-        host: "VestaEdu",
-        content: "...",
-        phone: "0900000000",
-      });
+      .send({ title: "Event A", image: "/i.jpg", bannerImg: "/b.jpg", date: "2026-12-01",
+        startTime: "09:00", category: "English", location: "HCM", cost: "free",
+        host: "VestaEdu", content: "...", phone: "0900000000" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/events/create — student → 403", async () => {
-    const res = await request(app)
-      .post("/api/events/create")
-      .set(auth(studentToken))
-      .send({ title: "X" });
+    const res = await request(app).post("/api/events/create")
+      .set(auth(studentToken)).send({ title: "X" });
     expect(res.status).toBe(403);
   });
 
   test("PUT /api/events/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .put("/api/events/1")
-      .set(auth(teacherToken))
-      .send({ title: "Updated" });
+    const res = await request(app).put("/api/events/1")
+      .set(auth(teacherToken)).send({ title: "Updated" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/events/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/events/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/events/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -350,32 +273,24 @@ describe("Quiz API", () => {
   });
 
   test("POST /api/quizzes — teacher → 201", async () => {
-    const res = await request(app)
-      .post("/api/quizzes")
-      .set(auth(teacherToken))
-      .send({ title: "Quiz X", category: "English" });
+    const res = await request(app).post("/api/quizzes")
+      .set(auth(teacherToken)).send({ title: "Quiz X", category: "English" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/quizzes — no token → 401", async () => {
-    const res = await request(app)
-      .post("/api/quizzes")
-      .send({ title: "Quiz X" });
+    const res = await request(app).post("/api/quizzes").send({ title: "Quiz X" });
     expect(res.status).toBe(401);
   });
 
   test("PUT /api/quizzes/1 — admin → 200", async () => {
-    const res = await request(app)
-      .put("/api/quizzes/1")
-      .set(auth(adminToken))
-      .send({ title: "Updated" });
+    const res = await request(app).put("/api/quizzes/1")
+      .set(auth(adminToken)).send({ title: "Updated" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/quizzes/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/quizzes/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/quizzes/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -395,45 +310,31 @@ describe("Question API", () => {
   });
 
   test("GET /api/questions — student → 403", async () => {
-    const res = await request(app)
-      .get("/api/questions")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/questions").set(auth(studentToken));
     expect(res.status).toBe(403);
   });
 
   test("GET /api/questions/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .get("/api/questions/1")
-      .set(auth(teacherToken));
+    const res = await request(app).get("/api/questions/1").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
   test("POST /api/questions — teacher → 201", async () => {
-    const res = await request(app)
-      .post("/api/questions")
+    const res = await request(app).post("/api/questions")
       .set(auth(teacherToken))
-      .send({
-        quizId: 1,
-        type: "multiple-choice",
-        questionText: "What?",
-        options: ["A", "B", "C"],
-        correctAnswer: "A",
-      });
+      .send({ quizId: 1, type: "multiple-choice", questionText: "What?",
+        options: ["A","B","C"], correctAnswer: "A" });
     expect(res.status).toBe(201);
   });
 
   test("PUT /api/questions/1 — admin → 200", async () => {
-    const res = await request(app)
-      .put("/api/questions/1")
-      .set(auth(adminToken))
-      .send({ questionText: "Updated?" });
+    const res = await request(app).put("/api/questions/1")
+      .set(auth(adminToken)).send({ questionText: "Updated?" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/questions/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/questions/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/questions/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -448,10 +349,8 @@ describe("Category API", () => {
   });
 
   test("POST /api/categories — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/categories")
-      .set(auth(adminToken))
-      .send({ name: "New Cat" });
+    const res = await request(app).post("/api/categories")
+      .set(auth(adminToken)).send({ name: "New Cat" });
     expect(res.status).toBe(201);
   });
 
@@ -461,16 +360,12 @@ describe("Category API", () => {
   });
 
   test("DELETE /api/categories/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/categories/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/categories/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 
   test("DELETE /api/categories/1 — teacher → 403", async () => {
-    const res = await request(app)
-      .delete("/api/categories/1")
-      .set(auth(teacherToken));
+    const res = await request(app).delete("/api/categories/1").set(auth(teacherToken));
     expect(res.status).toBe(403);
   });
 
@@ -500,85 +395,63 @@ describe("Class API", () => {
   });
 
   test("POST /api/classes — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/classes")
-      .set(auth(adminToken))
-      .send({ name: "Class B" });
+    const res = await request(app).post("/api/classes")
+      .set(auth(adminToken)).send({ name: "Class B" });
     expect(res.status).toBe(201);
   });
 
   test("GET /api/classes/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .get("/api/classes/1")
-      .set(auth(teacherToken));
+    const res = await request(app).get("/api/classes/1").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
   test("POST /api/classes/1/add-user — admin → 200", async () => {
-    const res = await request(app)
-      .post("/api/classes/1/add-user")
-      .set(auth(adminToken))
-      .send({ userId: 2 });
+    const res = await request(app).post("/api/classes/1/add-user")
+      .set(auth(adminToken)).send({ userId: 2 });
     expect(res.status).toBe(200);
   });
 
   test("POST /api/classes/1/add-quiz — teacher → 200", async () => {
-    const res = await request(app)
-      .post("/api/classes/1/add-quiz")
-      .set(auth(teacherToken))
-      .send({ quizId: 1 });
+    const res = await request(app).post("/api/classes/1/add-quiz")
+      .set(auth(teacherToken)).send({ quizId: 1 });
     expect(res.status).toBe(200);
   });
 
   test("GET /api/classes/1/quizzes — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/classes/1/quizzes")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/classes/1/quizzes").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/classes/1/students — teacher → 200", async () => {
-    const res = await request(app)
-      .get("/api/classes/1/students")
-      .set(auth(teacherToken));
+    const res = await request(app).get("/api/classes/1/students").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
   test("POST /api/classes/1/students — admin → 200", async () => {
-    const res = await request(app)
-      .post("/api/classes/1/students")
-      .set(auth(adminToken))
-      .send({ studentIds: [2, 3] });
+    const res = await request(app).post("/api/classes/1/students")
+      .set(auth(adminToken)).send({ studentIds: [2, 3] });
     expect(res.status).toBe(200);
   });
 
   test("POST /api/classes/move-students — admin → 200", async () => {
-    const res = await request(app)
-      .post("/api/classes/move-students")
-      .set(auth(adminToken))
-      .send({ fromClassId: "1", toClassId: "2", studentIds: [3] });
+    const res = await request(app).post("/api/classes/move-students")
+      .set(auth(adminToken)).send({ fromClassId: "1", toClassId: "2", studentIds: [3] });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/classes/1/students/2 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/classes/1/students/2")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/classes/1/students/2").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 
   test("PUT /api/classes/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .put("/api/classes/1")
-      .set(auth(teacherToken))
-      .send({ name: "Updated Class" });
+    const res = await request(app).put("/api/classes/1")
+      .set(auth(teacherToken)).send({ name: "Updated Class" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/classes/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/classes/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/classes/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -588,43 +461,25 @@ describe("Class API", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Course Registration API", () => {
   test("POST /api/course-registrations — student → 201", async () => {
-    const res = await request(app)
-      .post("/api/course-registrations")
+    const res = await request(app).post("/api/course-registrations")
       .set(auth(studentToken))
-      .send({
-        name: "Student A",
-        email: "s@test.com",
-        phone: "0900000003",
-        courseId: 1,
-        courseTitle: "IELTS",
-      });
+      .send({ name: "Student A", email: "s@test.com", phone: "0900000003", courseId: 1, courseTitle: "IELTS" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/course-registrations — no token → 401", async () => {
-    const res = await request(app)
-      .post("/api/course-registrations")
-      .send({
-        name: "X",
-        email: "x@x.com",
-        phone: "123",
-        courseId: 1,
-        courseTitle: "Y",
-      });
+    const res = await request(app).post("/api/course-registrations")
+      .send({ name: "X", email: "x@x.com", phone: "123", courseId: 1, courseTitle: "Y" });
     expect(res.status).toBe(401);
   });
 
   test("GET /api/course-registrations — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/course-registrations")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/course-registrations").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/course-registrations — student → 403", async () => {
-    const res = await request(app)
-      .get("/api/course-registrations")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/course-registrations").set(auth(studentToken));
     expect(res.status).toBe(403);
   });
 });
@@ -634,22 +489,13 @@ describe("Course Registration API", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Event Registration API", () => {
   test("POST /api/event-registrations — public → 201", async () => {
-    const res = await request(app)
-      .post("/api/event-registrations")
-      .send({
-        name: "Visitor A",
-        email: "v@test.com",
-        phone: "0900000004",
-        eventId: 1,
-        eventTitle: "Seminar A",
-      });
+    const res = await request(app).post("/api/event-registrations")
+      .send({ name: "Visitor A", email: "v@test.com", phone: "0900000004", eventId: 1, eventTitle: "Seminar A" });
     expect(res.status).toBe(201);
   });
 
   test("GET /api/event-registrations — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/event-registrations")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/event-registrations").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 
@@ -659,9 +505,7 @@ describe("Event Registration API", () => {
   });
 
   test("GET /api/event-registrations — student → 403", async () => {
-    const res = await request(app)
-      .get("/api/event-registrations")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/event-registrations").set(auth(studentToken));
     expect(res.status).toBe(403);
   });
 });
@@ -681,33 +525,25 @@ describe("Instructor API", () => {
   });
 
   test("POST /api/instructors — admin → 201", async () => {
-    const res = await request(app)
-      .post("/api/instructors")
-      .set(auth(adminToken))
-      .send({ name: "Instructor X", designation: "Tutor" });
+    const res = await request(app).post("/api/instructors")
+      .set(auth(adminToken)).send({ name: "Instructor X", designation: "Tutor" });
     expect(res.status).toBe(201);
   });
 
   test("POST /api/instructors — teacher → 403", async () => {
-    const res = await request(app)
-      .post("/api/instructors")
-      .set(auth(teacherToken))
-      .send({ name: "X", designation: "Y" });
+    const res = await request(app).post("/api/instructors")
+      .set(auth(teacherToken)).send({ name: "X", designation: "Y" });
     expect(res.status).toBe(403);
   });
 
   test("PUT /api/instructors/1 — admin → 200", async () => {
-    const res = await request(app)
-      .put("/api/instructors/1")
-      .set(auth(adminToken))
-      .send({ name: "Updated" });
+    const res = await request(app).put("/api/instructors/1")
+      .set(auth(adminToken)).send({ name: "Updated" });
     expect(res.status).toBe(200);
   });
 
   test("DELETE /api/instructors/1 — admin → 204", async () => {
-    const res = await request(app)
-      .delete("/api/instructors/1")
-      .set(auth(adminToken));
+    const res = await request(app).delete("/api/instructors/1").set(auth(adminToken));
     expect(res.status).toBe(204);
   });
 });
@@ -717,24 +553,18 @@ describe("Instructor API", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Dashboard API", () => {
   test("GET /api/dashboard/stats — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/dashboard/stats")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/dashboard/stats").set(auth(adminToken));
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("data");
   });
 
   test("GET /api/dashboard/stats — teacher → 200", async () => {
-    const res = await request(app)
-      .get("/api/dashboard/stats")
-      .set(auth(teacherToken));
+    const res = await request(app).get("/api/dashboard/stats").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/dashboard/stats — student → 403", async () => {
-    const res = await request(app)
-      .get("/api/dashboard/stats")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/dashboard/stats").set(auth(studentToken));
     expect(res.status).toBe(403);
   });
 
@@ -749,9 +579,7 @@ describe("Dashboard API", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Assigned Quizzes API", () => {
   test("GET /api/assigned-quizzes — auth → 200", async () => {
-    const res = await request(app)
-      .get("/api/assigned-quizzes")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/assigned-quizzes").set(auth(studentToken));
     expect(res.status).toBe(200);
   });
 
@@ -766,9 +594,7 @@ describe("Assigned Quizzes API", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Quiz Results API", () => {
   test("POST /api/results/start/1 — auth → 201", async () => {
-    const res = await request(app)
-      .post("/api/results/start/1")
-      .set(auth(studentToken));
+    const res = await request(app).post("/api/results/start/1").set(auth(studentToken));
     expect(res.status).toBe(201);
   });
 
@@ -778,81 +604,60 @@ describe("Quiz Results API", () => {
   });
 
   test("POST /api/results/temp/abc-result-uuid — auth → 200", async () => {
-    const res = await request(app)
-      .post("/api/results/temp/abc-result-uuid")
-      .set(auth(studentToken))
-      .send({ answers: [] });
+    const res = await request(app).post("/api/results/temp/abc-result-uuid")
+      .set(auth(studentToken)).send({ answers: [] });
     expect(res.status).toBe(200);
   });
 
   test("POST /api/results/submit/abc-result-uuid — auth → 200", async () => {
-    const res = await request(app)
-      .post("/api/results/submit/abc-result-uuid")
-      .set(auth(studentToken))
-      .send({ answers: [] });
+    const res = await request(app).post("/api/results/submit/abc-result-uuid")
+      .set(auth(studentToken)).send({ answers: [] });
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/latest/1 — auth → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/latest/1")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/results/latest/1").set(auth(studentToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/attempts/1 — auth → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/attempts/1")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/results/attempts/1").set(auth(studentToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/user/results-stats — auth → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/user/results-stats")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/results/user/results-stats").set(auth(studentToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/quiz/1/best-attempts — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/quiz/1/best-attempts")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/results/quiz/1/best-attempts").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/quiz/1/best-attempts — student → 403", async () => {
-    const res = await request(app)
-      .get("/api/results/quiz/1/best-attempts")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/results/quiz/1/best-attempts").set(auth(studentToken));
     expect(res.status).toBe(403);
   });
 
   test("GET /api/results/user/1/quiz/1/best-attempt — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/user/1/quiz/1/best-attempt")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/results/user/1/quiz/1/best-attempt").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/user-summary/1 — teacher → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/user-summary/1")
-      .set(auth(teacherToken));
+    const res = await request(app).get("/api/results/user-summary/1").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/best-attempts/1 — auth → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/best-attempts/1")
-      .set(auth(studentToken));
+    const res = await request(app).get("/api/results/best-attempts/1").set(auth(studentToken));
     expect(res.status).toBe(200);
   });
 
   test("GET /api/results/user-best-attempts/1 — admin → 200", async () => {
-    const res = await request(app)
-      .get("/api/results/user-best-attempts/1")
-      .set(auth(adminToken));
+    const res = await request(app).get("/api/results/user-best-attempts/1").set(auth(adminToken));
     expect(res.status).toBe(200);
   });
 });
+

@@ -1,166 +1,88 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import courseImg1 from "../../assets/images/course/1.png";
-import "./SingleCourseCustom.css";
+import courseImgFallback from "../../assets/images/course/1.png";
+import { Card } from "../ui/Card";
+import { Badge } from "../ui/Badge";
 
-const SingleCourseThreeCustom = (props) => {
-  const {
-    itemClass,
-    courseID,
-    courseImg,
-    courseName,
-    courseTitle,
-    courseAuthor,
-    courseType,
-    courseLesson,
-    coursePrice,
-    courseDuration,
-    courseReview,
-    courseDis,
-  } = props;
-
+export const SingleCourseThreeCustom = ({
+  itemClass = "",
+  courseID,
+  courseImg,
+  courseName,
+  courseTitle = "The Most Complete Design Thinking Course",
+  courseAuthor = "John Doe",
+  courseType,
+  courseLesson,
+  coursePrice,
+  courseDuration,
+  courseReview = 4.5,
+}) => {
   const isFree = !coursePrice || coursePrice === 0 || coursePrice === "0";
   const reviewScore = parseFloat(courseReview) || 4.5;
-  const fullStars = Math.floor(reviewScore);
 
   return (
-    <div className={itemClass ? itemClass : "scc-outer"}>
-      <div className="scc-card">
-        {/* ── Thumbnail ── */}
-        <Link to={`/course/${courseID}`} className="scc-thumb">
-          <img src={courseImg || courseImg1} alt={courseTitle || "Course"} />
-          <div className="scc-thumb-overlay">
-            <span className="scc-play-ring">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-            </span>
-          </div>
-          {/* badges */}
-          {courseName && <span className="scc-badge-cat">{courseName}</span>}
-          {courseType && <span className="scc-badge-level">{courseType}</span>}
+    <Card
+      hover
+      className={`group flex flex-col h-full bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${itemClass}`}
+    >
+      {/* ── Thumbnail ── */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+        <Link to={`/course/${courseID}`} className="block h-full w-full">
+          <img
+            src={courseImg || courseImgFallback}
+            alt={courseTitle}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
         </Link>
-
-        {/* ── Body ── */}
-        <div className="scc-body">
-          {/* Title */}
-          <h4 className="scc-title">
-            <Link to={`/course/${courseID}`}>
-              {courseTitle || "The Most Complete Design Thinking Course"}
-            </Link>
-          </h4>
-
-          {/* Author */}
-          <p className="scc-author">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            {courseAuthor || "Instructor"}
-          </p>
-
-          {/* Stats row */}
-          <div className="scc-stats">
-            {courseLesson && (
-              <span className="scc-stat">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                </svg>
-                {courseLesson} bài
-              </span>
-            )}
-            {courseDuration && (
-              <span className="scc-stat">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                {courseDuration}
-              </span>
-            )}
-          </div>
-
-          {/* Rating */}
-          <div className="scc-rating">
-            <span className="scc-score">{reviewScore.toFixed(1)}</span>
-            <div className="scc-stars">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <svg key={i} width="12" height="12" viewBox="0 0 24 24">
-                  <polygon
-                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                    fill={i <= fullStars ? "#c9a84c" : "none"}
-                    stroke="#c9a84c"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="scc-divider" />
-
-          {/* Price + CTA */}
-          <div className="scc-footer">
-            <div className="scc-price-wrap">
-              {courseDis && <span className="scc-original">{courseDis}</span>}
-              <span className={`scc-price${isFree ? " is-free" : ""}`}>
-                {isFree ? "Miễn phí" : coursePrice}
-              </span>
-            </div>
-            <Link to={`/course/${courseID}`} className="scc-btn">
-              Đăng ký
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </Link>
-          </div>
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+          {courseName && (
+            <Badge variant="primary" size="sm" className="shadow-sm">
+              {courseName}
+            </Badge>
+          )}
+          {courseType && (
+            <Badge variant="neutral" size="sm" className="shadow-sm bg-white/90 text-slate-800">
+              {courseType}
+            </Badge>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* ── Body ── */}
+      <div className="flex flex-1 flex-col p-5">
+        <h4 className="mb-2.5 text-base font-bold text-slate-800 transition-colors group-hover:text-blue-600 line-clamp-2">
+          <Link to={`/course/${courseID}`}>{courseTitle}</Link>
+        </h4>
+
+        {/* Author & Rating */}
+        <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+          <span className="font-medium text-slate-700">{courseAuthor}</span>
+          <div className="flex items-center gap-1 text-amber-500 font-semibold">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>{reviewScore.toFixed(1)}</span>
+          </div>
+        </div>
+
+        {/* Footer: Lesson, Duration, Price */}
+        <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+          <div className="flex items-center gap-3 text-slate-500">
+            {courseLesson && <span>{courseLesson} bài học</span>}
+            {courseDuration && <span>• {courseDuration}</span>}
+          </div>
+          <span
+            className={`font-bold text-sm ${
+              isFree ? "text-emerald-600" : "text-blue-600"
+            }`}
+          >
+            {isFree ? "Miễn phí" : `$${coursePrice}`}
+          </span>
+        </div>
+      </div>
+    </Card>
   );
 };
 

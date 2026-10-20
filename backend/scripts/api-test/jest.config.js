@@ -6,7 +6,10 @@ module.exports = {
   transform: {
     "^.+\\.tsx?$": ["babel-jest", {}],
   },
-  reporters: ["default", ["<rootDir>/scripts/api-test/reporter.js", {}]],
+  reporters: [
+    "default",
+    ["<rootDir>/scripts/api-test/reporter.js", {}],
+  ],
   testTimeout: 15000,
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 };

@@ -496,13 +496,7 @@ const GeneratedDropdownRenderer = ({
   return (
     <div
       ref={containerRef}
-      className="rendered-question"
-      style={{
-        fontSize: "16px",
-        lineHeight: "2",
-        color: "#262626",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      }}
+      className="rendered-question text-base leading-loose text-slate-800 p-5 bg-white rounded-xl border border-slate-200 shadow-sm"
       dangerouslySetInnerHTML={{ __html: question.question_text }}
     />
   );

@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./assets/scss/main.scss";
+import "./tailwind.css";
 
 import axios from "axios";
 
