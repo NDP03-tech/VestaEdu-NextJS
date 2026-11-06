@@ -2,7 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import defaultCourseImg from "../../assets/images/course/1.jpg";
 import defaultAuthorImg from "../../assets/images/course/1.jpg";
-import "./SingleCourseList.css";
+import { FileTextIcon, ArrowRightIcon, PriceTag } from "./CourseCardParts";
+
+const CLOUDINARY_BASE = "https://res.cloudinary.com/dubzoozqi/image/upload/";
+
+const resolveImage = (img, fallback) => {
+  if (!img) return fallback;
+  return img.startsWith("http") ? img : `${CLOUDINARY_BASE}${img}`;
+};
 
 const SingleCourseList = (props) => {
   const {
@@ -17,109 +24,70 @@ const SingleCourseList = (props) => {
     coursePrice,
   } = props;
 
-  const courseImageUrl = courseImg?.startsWith("http")
-    ? courseImg
-    : `https://res.cloudinary.com/dubzoozqi/image/upload/${courseImg}`;
-
-  const authorImageUrl = courseAuthorImg?.startsWith("http")
-    ? courseAuthorImg
-    : `https://res.cloudinary.com/dubzoozqi/image/upload/${courseAuthorImg}`;
-
-  const isFree = !coursePrice || coursePrice === 0 || coursePrice === "0";
+  const courseUrl = `/course/${courseID}`;
 
   return (
-    <div className={itemClass ? itemClass : "scl-wrapper"}>
-      <div className="scl-card">
-        {/* ── Image Panel ── */}
-        <div className="scl-image-wrap">
-          <Link to={`/course/${courseID}`} className="scl-img-link">
+    <div className={itemClass ? itemClass : "w-full"}>
+      <article className="group flex flex-col overflow-hidden rounded-[10px] border border-line bg-white font-body shadow-card transition duration-200 hover:-translate-y-1 hover:border-gold/40 hover:shadow-lift sm:flex-row">
+        {/* ── Image ── */}
+        <div className="relative h-[190px] w-full shrink-0 overflow-hidden bg-navy-mid sm:h-auto sm:w-56">
+          <Link to={courseUrl} className="block h-full w-full">
             <img
-              src={courseImg ? courseImageUrl : defaultCourseImg}
+              src={resolveImage(courseImg, defaultCourseImg)}
               alt={courseTitle || "Course"}
-              className="scl-img"
+              className="block h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="scl-img-overlay" />
           </Link>
-          <span className="scl-category-badge">{courseName || "Beginner"}</span>
+          <span className="absolute left-3 top-3 rounded bg-gold px-[9px] py-1 text-[10px] font-bold uppercase leading-none tracking-[0.12em] text-navy shadow-md">
+            {courseName || "Beginner"}
+          </span>
         </div>
 
-        {/* ── Content Panel ── */}
-        <div className="scl-content">
-          {/* Title */}
-          <h4 className="scl-title">
-            <Link to={`/course/${courseID}`}>
+        {/* ── Content ── */}
+        <div className="flex min-w-0 flex-1 flex-col px-4 py-4 sm:px-5">
+          <h4 className="m-0 mb-3 font-display text-[17px] font-semibold leading-[1.4] text-ink lg:text-lg">
+            <Link
+              to={courseUrl}
+              className="line-clamp-2 text-inherit no-underline transition-colors hover:text-gold"
+            >
               {courseTitle ||
                 "The Most Complete Design Thinking Course On The Market."}
             </Link>
           </h4>
 
-          {/* Author */}
-          <div className="scl-author">
-            <div className="scl-author-avatar">
-              <img
-                src={courseAuthorImg ? authorImageUrl : defaultAuthorImg}
-                alt={courseAuthor || "Author"}
-              />
-            </div>
-            <span className="scl-author-name">
+          <div className="flex items-center gap-2.5">
+            <img
+              src={resolveImage(courseAuthorImg, defaultAuthorImg)}
+              alt={courseAuthor || "Author"}
+              className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-line"
+            />
+            <span className="truncate text-[12.5px] text-ink-mid">
               {courseAuthor || "Unknown Author"}
             </span>
           </div>
 
-          {/* Divider */}
-          <div className="scl-divider" />
+          <div className="my-3.5 h-px shrink-0 bg-line" />
 
-          {/* Meta row */}
-          <div className="scl-meta">
-            <div className="scl-lessons">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
-              <span>{courseLesson || "0"} Lessons</span>
-            </div>
-
-            <div className={`scl-price ${isFree ? "scl-price--free" : ""}`}>
-              {isFree ? "Free" : coursePrice}
-            </div>
+          <div className="mt-auto flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-ink-muted">
+              <span className="text-gold">
+                <FileTextIcon size={15} />
+              </span>
+              {courseLesson || "0"} Lessons
+            </span>
+            <PriceTag price={coursePrice} freeLabel="Free" />
           </div>
         </div>
 
-        {/* ── CTA Arrow ── */}
+        {/* ── CTA ── */}
         <Link
-          to={`/course/${courseID}`}
-          className="scl-cta"
+          to={courseUrl}
           aria-label="View course"
+          className="flex shrink-0 items-center justify-center border-t border-line bg-white py-3 text-navy no-underline transition-colors duration-200 hover:bg-navy hover:text-gold sm:w-14 sm:border-l sm:border-t-0 sm:py-0"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
+          <ArrowRightIcon size={18} strokeWidth={1.5} />
         </Link>
-      </div>
+      </article>
     </div>
   );
 };

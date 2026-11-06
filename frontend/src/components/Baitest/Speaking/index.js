@@ -1,12 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+
+const MOTTOS = [
+  {
+    en: '"Success is earned through sweat and persistence."',
+    vi: "Thành công được kiếm bằng mồ hôi và sự kiên trì.",
+  },
+  {
+    en: '"Work hard today for a better tomorrow."',
+    vi: "Làm việc chăm chỉ hôm nay để có ngày mai tốt đẹp hơn.",
+  },
+  {
+    en: '"No shortcuts, just hard work."',
+    vi: "Không có lối tắt, chỉ có làm việc chăm chỉ.",
+  },
+  {
+    en: '"Dream big, work harder."',
+    vi: "Mơ lớn, làm việc chăm chỉ hơn.",
+  },
+  {
+    en: '"Effort today, pride forever."',
+    vi: "Nỗ lực hôm nay, tự hào mãi mãi.",
+  },
+];
+
+const PromptCard = ({ children }) => (
+  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 font-serif text-xl font-bold italic text-slate-800 sm:text-2xl">
+    {children}
+  </div>
+);
 
 const SpeakingComponent = ({ setVideoUrl }) => {
-  const [videoUrl, setVideoUrlState] = useState('');
+  const [videoUrl, setVideoUrlState] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái để kiểm tra đã gửi hay chưa
 
   useEffect(() => {
     // Tải video URL từ localStorage khi component được khởi tạo
-    const storedUrl = localStorage.getItem('videoUrl');
+    const storedUrl = localStorage.getItem("videoUrl");
     if (storedUrl) {
       setVideoUrlState(storedUrl);
       setVideoUrl(storedUrl); // Cập nhật URL từ localStorage
@@ -14,99 +43,78 @@ const SpeakingComponent = ({ setVideoUrl }) => {
   }, [setVideoUrl]);
 
   const handleChange = (e) => {
-    const url = e.target.value;
-    setVideoUrlState(url);
+    setVideoUrlState(e.target.value);
   };
 
   const handleSubmit = () => {
     if (!isSubmitted) {
-      localStorage.setItem('videoUrl', videoUrl); // Lưu URL vào localStorage
+      localStorage.setItem("videoUrl", videoUrl); // Lưu URL vào localStorage
       setVideoUrl(videoUrl); // Gọi hàm truyền từ component cha để cập nhật URL
       setIsSubmitted(true); // Đánh dấu là đã gửi
-      alert('Video URL đã được gửi và lưu thành công!'); // Thông báo cho người dùng
+      alert("Video URL đã được gửi và lưu thành công!"); // Thông báo cho người dùng
     } else {
-      alert('Bạn đã gửi URL video này rồi!'); // Thông báo nếu đã gửi
+      alert("Bạn đã gửi URL video này rồi!"); // Thông báo nếu đã gửi
     }
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Helvetica' }}>
-      <p style={{ backgroundColor: '#ffdb39', textAlign: 'left', padding: '15px' }}>
-        <span style={{ color: '#000000', fontSize: '36px', fontFamily: 'Gill Sans' }}>
-          <strong>
-            D. SPEAKING: Record a video of yourself answering the following question in 2 minutes, upload it and paste the link to your video below.
-          </strong>
-        </span>
-      </p>
-      <hr style={{ height: '2px', borderWidth: 0, color: 'gray', backgroundColor: 'gray' }} />
-      <p style={{ backgroundColor: '#fff8dc', textAlign: 'left', padding: '15px' }}>
-        <strong>
-          <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
-            <em>
-              Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em mà em thấy đúng với phương châm đó.
-            </em>
-          </span>
-        </strong>
-      </p>
-      <p style={{ backgroundColor: '#fff8dc', textAlign: 'left', padding: '15px' }}>
-        <strong>
-          <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
-            <em>
-              Ghi hình em nói trong 2 phút, upload link ở ô trống bên dưới.
-            </em>
-          </span>
-        </strong>
-      </p>
-      <p style={{ backgroundColor: '#fff8dc', textAlign: 'left', padding: '15px' }}>
-  <strong>
-    <span style={{ color: '#333333', fontSize: '24px', fontFamily: 'Georgia' }}>
-      <em>
-        Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em mà em thấy đúng với phương châm đó:
-      </em>
-    </span>
-  </strong>
-  <ol style={{ marginTop: '10px', fontSize: '20px', fontFamily: 'Georgia', color: '#555' }}>
-    <li><strong>"Success is earned through sweat and persistence."</strong> - Thành công được kiếm bằng mồ hôi và sự kiên trì.</li>
-    <li><strong>"Work hard today for a better tomorrow."</strong> - Làm việc chăm chỉ hôm nay để có ngày mai tốt đẹp hơn.</li>
-    <li><strong>"No shortcuts, just hard work."</strong> - Không có lối tắt, chỉ có làm việc chăm chỉ.</li>
-    <li><strong>"Dream big, work harder."</strong> - Mơ lớn, làm việc chăm chỉ hơn.</li>
-    <li><strong>"Effort today, pride forever."</strong> - Nỗ lực hôm nay, tự hào mãi mãi.</li>
-  </ol>
-</p>
+    <div className="mx-auto max-w-4xl space-y-5 px-4 py-6 text-slate-800">
+      <h2 className="m-0 rounded-lg bg-amber-100 px-4 py-4 text-xl font-bold leading-snug text-amber-900 sm:text-2xl">
+        D. SPEAKING: Record a video of yourself answering the following question
+        in 2 minutes, upload it and paste the link to your video below.
+      </h2>
 
-      <hr style={{ height: '2px', borderWidth: 0, color: 'gray', backgroundColor: 'gray' }} />
-      <p style={{ fontSize: '20px', color: '#333333' }}>
-        <strong>Paste your video URL here:</strong>
-        <input 
-          type="text" 
-          value={videoUrl} 
-          onChange={handleChange} 
-          placeholder="Enter video URL" 
-          style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+      <hr className="m-0 h-0.5 border-0 bg-slate-300" />
+
+      <PromptCard>
+        Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em
+        mà em thấy đúng với phương châm đó.
+      </PromptCard>
+
+      <PromptCard>
+        Ghi hình em nói trong 2 phút, upload link ở ô trống bên dưới.
+      </PromptCard>
+
+      <PromptCard>
+        Chọn một phương châm sống sau đây và kể một câu chuyện đã xảy ra với em
+        mà em thấy đúng với phương châm đó:
+        <ol className="m-0 mt-3 list-decimal space-y-1 pl-6 font-serif text-xl font-normal not-italic text-slate-600">
+          {MOTTOS.map(({ en, vi }) => (
+            <li key={en}>
+              <strong className="text-slate-800">{en}</strong> - {vi}
+            </li>
+          ))}
+        </ol>
+      </PromptCard>
+
+      <hr className="m-0 h-0.5 border-0 bg-slate-300" />
+
+      <div>
+        <label htmlFor="video-url" className="text-xl font-bold text-slate-800">
+          Paste your video URL here:
+        </label>
+        <input
+          id="video-url"
+          type="text"
+          value={videoUrl}
+          onChange={handleChange}
+          placeholder="Enter video URL"
+          className="mt-2.5 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
         />
-      </p>
-      <button 
-        onClick={handleSubmit} 
-        style={{ 
-          marginTop: '20px', 
-          padding: '10px 15px', 
-          backgroundColor: isSubmitted ? '#ccc' : '#007bff', // Đổi màu nếu đã gửi
-          color: '#fff', 
-          border: 'none', 
-          borderRadius: '4px', 
-          cursor: isSubmitted ? 'not-allowed' : 'pointer', // Thay đổi con trỏ nếu đã gửi
-          pointerEvents: isSubmitted ? 'none' : 'auto' // Ngăn chặn sự kiện nhấp nếu đã gửi
-        }}
-        disabled={isSubmitted} // Vô hiệu hóa nút nếu đã gửi
+      </div>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={isSubmitted}
+        className="cursor-pointer rounded-md bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
         Submit
       </button>
-      <p>
-        <span style={{ fontSize: '18px', color: '#800000' }}>
-          <strong>
-            HAVE YOU LEFT YOUR EMAIL ADDRESS TO RECEIVE THE RESULT? IF NOT, PLEASE CONFIRM YOUR EMAIL BELOW.
-          </strong>
-        </span>
+
+      <p className="m-0 text-lg font-bold text-red-900">
+        HAVE YOU LEFT YOUR EMAIL ADDRESS TO RECEIVE THE RESULT? IF NOT, PLEASE
+        CONFIRM YOUR EMAIL BELOW.
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import RichTextEditor from './RichTextEditor';
+import React from "react";
+import RichTextEditor from "./RichTextEditor";
+import EditorSection from "./EditorSection";
 
 const ReadingTaskEditor = ({
   readingContent,
@@ -10,45 +11,25 @@ const ReadingTaskEditor = ({
   onCreateMultipleGap,
   onDeleteGap,
   onAddHint,
-  onCreateDropdown
-}) => {
-  // Ghi log khi readingContent hoặc questionText thay đổi
-  useEffect(() => {
-    console.log('📘 Bài đọc (readingContent):', readingContent);
-  }, [readingContent]);
+  onCreateDropdown,
+}) => (
+  <div className="space-y-5">
+    <EditorSection label="Bài đọc">
+      <RichTextEditor value={readingContent} onChange={setReadingContent} />
+    </EditorSection>
 
-  useEffect(() => {
-    console.log('📝 Câu hỏi (questionText):', questionText);
-  }, [questionText]);
-
-  return (
-    <div className="container-fluid">
-      <div className="row g-4">
-        {/* Cột trên: bài đọc */}
-        <div className="col-12">
-          <label className="form-label fw-bold">📘 Bài đọc</label>
-          <RichTextEditor
-            value={readingContent}
-            onChange={setReadingContent}
-          />
-        </div>
-
-        {/* Cột dưới: câu hỏi */}
-        <div className="col-12">
-          <label className="form-label fw-bold">📝 Câu hỏi</label>
-          <RichTextEditor
-            value={questionText}
-            onChange={setQuestionText}
-            onCreateGap={onCreateGap}
-            onCreateMultipleGap={onCreateMultipleGap}
-            onDeleteGap={onDeleteGap}
-            onAddHint={onAddHint}
-            onCreateDropdown={onCreateDropdown}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
+    <EditorSection label="Câu hỏi">
+      <RichTextEditor
+        value={questionText}
+        onChange={setQuestionText}
+        onCreateGap={onCreateGap}
+        onCreateMultipleGap={onCreateMultipleGap}
+        onDeleteGap={onDeleteGap}
+        onAddHint={onAddHint}
+        onCreateDropdown={onCreateDropdown}
+      />
+    </EditorSection>
+  </div>
+);
 
 export default ReadingTaskEditor;

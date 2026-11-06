@@ -2,13 +2,33 @@ import React, { useState, useEffect } from "react";
 import Axios from "axios";
 import RichTextEditor from "../Editor/RichTextEditor";
 import ReadingTaskEditor from "../Editor/ReadingTaskEditor";
+import EditorSection from "../Editor/EditorSection";
 import ExplanationEditor from "../Explanation/ExplanationEditor";
 import QuestionType from "../QuestionType";
 import CheckboxesEditor from "../Editor/CheckboxEditor";
 import MultipleChoiceEditor from "../Editor/MultipleChoiceEditor";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./QuestionForm.css";
 import config from "../../config";
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helpers                                        */
+/* ------------------------------------------------------------------ */
+
+const Badge = ({ className = "", children }) => (
+  <span
+    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}
+  >
+    {children}
+  </span>
+);
+
+const inputClass =
+  "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " +
+  "placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
+
+/* ------------------------------------------------------------------ */
+/* Main component                                                      */
+/* ------------------------------------------------------------------ */
+
 const QuestionFormTest = ({
   questionIndex = 0,
   questionData = {},
@@ -31,6 +51,11 @@ const QuestionFormTest = ({
   const [questionId, setQuestionId] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const hasOptions =
+    questionType === "checkboxes" || questionType === "multiple-choice";
+
+  /* ----------------------------- Effects ----------------------------- */
+
   useEffect(() => {
     const fetchQuestion = async () => {
       if (
@@ -38,7 +63,9 @@ const QuestionFormTest = ({
         (!questionData.questionText || !questionData.questionType)
       ) {
         try {
-          const res = await Axios.get(`${config.API_URL}/api/questions/${questionData.id}`);
+          const res = await Axios.get(
+            `${config.API_URL}/api/questions/${questionData.id}`,
+          );
           setFromData(res.data);
         } catch (err) {
           console.error("❌ Error fetching question:", err);
@@ -62,6 +89,8 @@ const QuestionFormTest = ({
     setPoints(data.points || 0);
     setHintWords(data.hintWords || data.hint_words || []);
   };
+
+  /* ----------------------------- Handlers ---------------------------- */
 
   const handleFocus = () => {
     if (points === 0) setPoints("");
@@ -108,7 +137,7 @@ const QuestionFormTest = ({
   const handleDeleteGap = (deletedText) => {
     setGaps((prevGaps) => {
       const newGaps = prevGaps.filter(
-        (gap) => !gap.correct_answers.includes(deletedText)
+        (gap) => !gap.correct_answers.includes(deletedText),
       );
       console.log("🔁 Gaps after deletion:", newGaps);
       return newGaps;
@@ -123,24 +152,25 @@ const QuestionFormTest = ({
     setDropdowns((prev) => [...prev, dropdownData]);
   };
 
-  const handleCreateQuestion = async () => {
-    const newQuestion = {
-      questionType,
-      readingContent,
-      questionText,
-      explanation,
-      points,
-      gaps,
-      dropdowns,
-      hintWords,
-      quiz_id: quizId,
-      ...(questionType === "checkboxes" || questionType === "multiple-choice"
-        ? { options }
-        : {}),
-    };
+  const buildPayload = () => ({
+    questionType,
+    readingContent,
+    questionText,
+    explanation,
+    points,
+    gaps,
+    dropdowns,
+    hintWords,
+    quiz_id: quizId,
+    ...(hasOptions ? { options } : {}),
+  });
 
+  const handleCreateQuestion = async () => {
     try {
-      const response = await Axios.post(`${config.API_URL}/api/questions`, newQuestion);
+      const response = await Axios.post(
+        `${config.API_URL}/api/questions`,
+        buildPayload(),
+      );
       alert("✅ Question created successfully");
       setQuestionId(response.data.id);
     } catch (error) {
@@ -150,24 +180,14 @@ const QuestionFormTest = ({
   };
 
   const handleUpdateQuestion = async () => {
-    const updatedData = {
-      questionType,
-      readingContent,
-      questionText,
-      explanation,
-      points,
-      gaps,
-      dropdowns,
-      hintWords,
-      quiz_id: quizId,
-      ...(questionType === "checkboxes" || questionType === "multiple-choice"
-        ? { options }
-        : {}),
-    };
+    const updatedData = buildPayload();
     console.log("📤 Updating question with:", updatedData);
 
     try {
-      await Axios.put(`${config.API_URL}/api/questions/${questionId}`, updatedData);
+      await Axios.put(
+        `${config.API_URL}/api/questions/${questionId}`,
+        updatedData,
+      );
       alert("✅ Question updated successfully");
       onFinishEdit?.({ ...updatedData, id: questionId });
     } catch (error) {
@@ -176,69 +196,78 @@ const QuestionFormTest = ({
     }
   };
 
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this question?")) {
+      onDelete?.(questionIndex, questionId);
+    }
+  };
+
+  /* ------------------------------ Render ----------------------------- */
+
   return (
-    <div className="question-form-container mb-4">
-      <div className="question-card">
+    <div className="mb-8">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
         {/* Header */}
-        <div className="question-header">
-          <div className="d-flex align-items-center gap-3 flex-grow-1">
+        <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              className="btn btn-sm btn-outline-secondary collapse-btn"
+              type="button"
               onClick={() => setIsCollapsed(!isCollapsed)}
+              aria-expanded={!isCollapsed}
+              aria-label={isCollapsed ? "Expand question" : "Collapse question"}
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white text-xs text-slate-600 transition-colors hover:bg-slate-100"
             >
               {isCollapsed ? "▶" : "▼"}
             </button>
-            <h5 className="mb-0 question-title">
-              <span className="question-number">
-                Question {questionIndex + 1}
-              </span>
+
+            <h5 className="m-0 flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
+              <span>Question {questionIndex + 1}</span>
               {questionId && (
-                <span className="badge bg-success ms-2">Saved</span>
+                <Badge className="bg-emerald-50 text-emerald-700">Saved</Badge>
               )}
               {questionType && (
-                <span className="badge bg-info ms-2 text-capitalize">
+                <Badge className="bg-blue-50 capitalize text-blue-700">
                   {questionType}
-                </span>
+                </Badge>
               )}
             </h5>
           </div>
 
           <button
             type="button"
-            className="btn btn-sm btn-outline-danger"
-            onClick={() => {
-              if (
-                window.confirm("Are you sure you want to delete this question?")
-              ) {
-                onDelete?.(questionIndex, questionId);
-              }
-            }}
+            onClick={handleDelete}
+            className="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-600 hover:text-white"
           >
-            🗑️ Delete
+            Delete
           </button>
         </div>
 
-        {/* Content */}
+        {/* Body */}
         {!isCollapsed && (
-          <div className="question-body">
-            {/* Settings Row */}
-            <div className="settings-row">
-              <div className="form-group flex-grow-1">
-                <label className="form-label fw-bold">📋 Question Type</label>
+          <div className="space-y-5 bg-slate-50 px-5 py-6">
+            {/* Settings */}
+            <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row">
+              <div className="flex flex-1 flex-col gap-1.5">
+                <label className="text-sm font-medium text-slate-700">
+                  Question type
+                </label>
                 <QuestionType
                   questionType={questionType}
                   setQuestionType={setQuestionType}
                 />
               </div>
 
-              <div className="form-group" style={{ minWidth: "150px" }}>
-                <label htmlFor="points" className="form-label fw-bold">
-                  🎯 Points per gap
+              <div className="flex flex-col gap-1.5 sm:w-40">
+                <label
+                  htmlFor="points"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Points per gap
                 </label>
                 <input
                   type="number"
                   id="points"
-                  className="form-control"
+                  className={inputClass}
                   value={isFocused ? points : points === 0 ? "" : points}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
@@ -248,111 +277,93 @@ const QuestionFormTest = ({
               </div>
             </div>
 
-            {/* Question Content */}
-            <div className="question-content-section">
-              {questionType === "reading" ? (
-                <ReadingTaskEditor
-                  readingContent={readingContent}
-                  setReadingContent={setReadingContent}
-                  questionText={questionText}
-                  setQuestionText={setQuestionText}
-                  onCreateGap={handleCreateGap}
-                  onCreateDropdown={handleCreateDropdown}
-                  onFocus={handleEditorFocus}
-                />
-              ) : (
-                <>
-                  <div className="editor-section">
-                    <label className="form-label fw-bold section-label">
-                      📝 Question Text
-                    </label>
-                    <RichTextEditor
-                      key={questionData?.id || "new"}
-                      value={questionText}
-                      onChange={setQuestionText}
-                      onDeleteGap={handleDeleteGap}
-                      onCreateMultipleGap={handleCreateMultipleGap}
-                      onCreateGap={handleCreateGap}
-                      onAddHint={handleAddHint}
-                      onCreateDropdown={handleCreateDropdown}
-                      onFocus={handleEditorFocus}
+            {/* Question content */}
+            {questionType === "reading" ? (
+              <ReadingTaskEditor
+                readingContent={readingContent}
+                setReadingContent={setReadingContent}
+                questionText={questionText}
+                setQuestionText={setQuestionText}
+                onCreateGap={handleCreateGap}
+                onCreateDropdown={handleCreateDropdown}
+                onFocus={handleEditorFocus}
+              />
+            ) : (
+              <>
+                <EditorSection label="Question text">
+                  <RichTextEditor
+                    key={questionData?.id || "new"}
+                    value={questionText}
+                    onChange={setQuestionText}
+                    onDeleteGap={handleDeleteGap}
+                    onCreateMultipleGap={handleCreateMultipleGap}
+                    onCreateGap={handleCreateGap}
+                    onAddHint={handleAddHint}
+                    onCreateDropdown={handleCreateDropdown}
+                    onFocus={handleEditorFocus}
+                  />
+                </EditorSection>
+
+                {questionType === "multiple-choice" && (
+                  <EditorSection label="Answer options">
+                    <MultipleChoiceEditor
+                      questionText={questionText}
+                      setQuestionText={setQuestionText}
+                      options={options}
+                      setOptions={setOptions}
                     />
-                  </div>
+                  </EditorSection>
+                )}
 
-                  {questionType === "multiple-choice" && (
-                    <div className="editor-section">
-                      <label className="form-label fw-bold section-label">
-                        ⭕ Answer Options
-                      </label>
-                      <MultipleChoiceEditor
-                        questionText={questionText}
-                        setQuestionText={setQuestionText}
-                        options={options}
-                        setOptions={setOptions}
-                      />
-                    </div>
-                  )}
-
-                  {questionType === "checkboxes" && (
-                    <div className="editor-section">
-                      <label className="form-label fw-bold section-label">
-                        ☑️ Checkbox Options
-                      </label>
-                      <CheckboxesEditor
-                        options={options}
-                        setOptions={setOptions}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                {questionType === "checkboxes" && (
+                  <EditorSection label="Checkbox options">
+                    <CheckboxesEditor
+                      options={options}
+                      setOptions={setOptions}
+                    />
+                  </EditorSection>
+                )}
+              </>
+            )}
 
             {/* Explanation */}
-            <div className="editor-section">
-              <label className="form-label fw-bold section-label">
-                🧠 Explanation (Optional)
-              </label>
+            <EditorSection label="Explanation (optional)">
               <ExplanationEditor
                 value={explanation}
                 onChange={setExplanation}
               />
-            </div>
+            </EditorSection>
 
-            {/* Action Buttons */}
-            <div className="action-buttons">
+            {/* Actions */}
+            <div className="flex justify-center border-t border-dashed border-slate-300 pt-5">
               {!questionId ? (
                 <button
+                  type="button"
                   onClick={handleCreateQuestion}
-                  className="btn btn-success btn-lg"
+                  className="w-full cursor-pointer rounded-lg bg-emerald-600 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 sm:w-auto sm:min-w-[200px]"
                 >
-                  <span className="me-2"></span> Save Question
+                  Save question
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={handleUpdateQuestion}
-                  className="btn btn-warning btn-lg"
+                  className="w-full cursor-pointer rounded-lg bg-amber-500 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600 sm:w-auto sm:min-w-[200px]"
                 >
-                  <span className="me-3"></span> Update Question
+                  Update question
                 </button>
               )}
             </div>
 
-            {/* Stats Footer */}
+            {/* Stats */}
             {(gaps.length > 0 ||
               dropdowns.length > 0 ||
               hintWords.length > 0) && (
-              <div className="stats-footer">
-                <small className="text-muted">
-                  {dropdowns.length > 0 && (
-                    <span className="me-3">
-                       Dropdowns: {dropdowns.length}
-                    </span>
-                  )}
-                  {hintWords.length > 0 && (
-                    <span> Hints: {hintWords.length}</span>
-                  )}
-                </small>
+              <div className="flex flex-wrap justify-center gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+                {dropdowns.length > 0 && (
+                  <span>Dropdowns: {dropdowns.length}</span>
+                )}
+                {hintWords.length > 0 && <span>Hints: {hintWords.length}</span>}
               </div>
             )}
           </div>

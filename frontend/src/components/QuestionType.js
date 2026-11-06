@@ -1,27 +1,40 @@
-import React from 'react';
+import React from "react";
+
+const QUESTION_TYPES = [
+  { value: "blank-boxes", label: "Blank Boxes & Dropdowns" },
+  { value: "generated-dropdowns", label: "Generated Dropdowns" },
+  { value: "drag-drop-matching", label: "Drag & Drop / Matching" },
+  { value: "find-highlight", label: "Find & Highlight (word search)" },
+  { value: "multiple-choice", label: "Multiple Choice (one answer correct)" },
+  { value: "checkboxes", label: "Checkboxes (several answers correct)" },
+  { value: "essay", label: "Essay (open-ended question)" },
+  { value: "speaking", label: "Speaking (Record speaking)" },
+  { value: "reading", label: "Reading Task (open-ended question)" },
+  { value: "description", label: "Description" },
+];
 
 const QuestionType = ({ questionType, setQuestionType }) => {
-    const handleChange = (event) => {
-        setQuestionType(event.target.value); // Cập nhật loại câu hỏi
-    };
+  const handleChange = (event) => {
+    setQuestionType(event.target.value); // Cập nhật loại câu hỏi
+  };
 
-    return (
-        <div className="question-type">
-            <select id="questionType" value={questionType} onChange={handleChange}>
-                <option value="">-- Chọn loại câu hỏi --</option>
-                <option value="blank-boxes">Blank Boxes & Dropdowns</option>
-                <option value="generated-dropdowns">Generated Dropdowns</option>
-                <option value="drag-drop-matching">Drag & Drop / Matching</option>
-                <option value="find-highlight">Find & Highlight (word search)</option>
-                <option value="multiple-choice">Multiple Choice (one answer correct)</option>
-                <option value="checkboxes">Checkboxes (several answers correct)</option>
-                <option value="essay">Essay (open-ended question)</option>
-                <option value="speaking">Speaking (Record speaking)</option>
-                <option value="reading">Reading Task (open-ended question)</option>
-                <option value="description">Description</option>
-            </select>
-        </div>
-    );
+  return (
+    <div>
+      <select
+        id="questionType"
+        value={questionType}
+        onChange={handleChange}
+        className="w-full cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      >
+        <option value="">-- Chọn loại câu hỏi --</option>
+        {QUESTION_TYPES.map(({ value, label }) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 };
 
 export default QuestionType;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Layout, Button, Dropdown, Avatar } from "antd";
+import { Dropdown } from "antd";
 import {
   ClipboardList,
   BarChart3,
@@ -10,7 +10,10 @@ import {
   X,
 } from "lucide-react";
 
-const { Header } = Layout;
+const NAV_ITEMS = [
+  { to: "/user/quizzes", label: "My Quizzes", icon: ClipboardList },
+  { to: "/user/results", label: "Results", icon: BarChart3 },
+];
 
 const UserHeader = () => {
   const location = useLocation();
@@ -43,364 +46,99 @@ const UserHeader = () => {
     },
   ];
 
+  const navLinkClass = (active, large = false) =>
+    `flex items-center rounded-lg border font-semibold no-underline transition-colors ${
+      large ? "gap-3 px-5 py-3.5 text-base" : "gap-2 px-4 py-2 text-sm"
+    } ${
+      active
+        ? "border-blue-100 bg-blue-50 text-blue-700"
+        : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+    }`;
+
   return (
-    <>
-      <Header
-        style={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          padding: "0 clamp(16px, 5vw, 48px)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-          position: "sticky",
-          top: 0,
-          zIndex: 1000,
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: "64px",
-            maxWidth: "1400px",
-            margin: "0 auto",
-          }}
+    <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/90 px-[clamp(16px,5vw,48px)] backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between">
+        {/* Logo */}
+        <Link to="/user" className="group flex items-center gap-3 no-underline">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white shadow-sm transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105">
+            V
+          </div>
+          <span className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
+            VestaEdu Academy
+          </span>
+        </Link>
+
+        {/* Desktop navigation */}
+        <nav className="hidden items-center gap-2 md:flex">
+          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            <Link key={to} to={to} className={navLinkClass(isActive(to))}>
+              <Icon size={18} />
+              <span>{label}</span>
+            </Link>
+          ))}
+
+          <Dropdown
+            menu={{ items: userMenuItems }}
+            placement="bottomRight"
+            trigger={["click"]}
+          >
+            <button
+              type="button"
+              className="ml-3 flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                <User size={18} />
+              </span>
+              Account
+            </button>
+          </Dropdown>
+        </nav>
+
+        {/* Mobile menu button */}
+        <button
+          type="button"
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-50 md:hidden"
         >
-          {/* Logo */}
-          <Link
-            to="/user"
-            style={{
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                background: "rgba(255, 255, 255, 0.95)",
-                borderRadius: "10px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "bold",
-                fontSize: "20px",
-                color: "#667eea",
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                transition: "transform 0.3s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = "scale(1.05) rotate(-5deg)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = "scale(1) rotate(0deg)")
-              }
-            >
-              V
-            </div>
-            <span
-              style={{
-                color: "#fff",
-                fontSize: "22px",
-                fontWeight: "700",
-                letterSpacing: "-0.5px",
-                textShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              VestaEdu Academy
-            </span>
-          </Link>
+          {mobileMenuOpen ? <X size={24} /> : <AlignJustify size={24} />}
+        </button>
+      </div>
 
-          {/* Desktop Navigation */}
-          <nav
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "center",
-            }}
-            className="desktop-nav"
-          >
-            <Link
-              to="/user/quizzes"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 20px",
-                borderRadius: "10px",
-                color: "#fff",
-                background: isActive("/user/quizzes")
-                  ? "rgba(255, 255, 255, 0.25)"
-                  : "transparent",
-                fontWeight: 600,
-                fontSize: "15px",
-                textDecoration: "none",
-                transition: "all 0.3s ease",
-                border: isActive("/user/quizzes")
-                  ? "1px solid rgba(255, 255, 255, 0.3)"
-                  : "1px solid transparent",
-                boxShadow: isActive("/user/quizzes")
-                  ? "0 4px 12px rgba(0, 0, 0, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive("/user/quizzes")) {
-                  e.currentTarget.style.background =
-                    "rgba(255, 255, 255, 0.15)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive("/user/quizzes")) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
-              }}
-            >
-              <ClipboardList size={18} />
-              <span>My Quizzes</span>
-            </Link>
-
-            <Link
-              to="/user/results"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 20px",
-                borderRadius: "10px",
-                color: "#fff",
-                background: isActive("/user/results")
-                  ? "rgba(255, 255, 255, 0.25)"
-                  : "transparent",
-                fontWeight: 600,
-                fontSize: "15px",
-                textDecoration: "none",
-                transition: "all 0.3s ease",
-                border: isActive("/user/results")
-                  ? "1px solid rgba(255, 255, 255, 0.3)"
-                  : "1px solid transparent",
-                boxShadow: isActive("/user/results")
-                  ? "0 4px 12px rgba(0, 0, 0, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive("/user/results")) {
-                  e.currentTarget.style.background =
-                    "rgba(255, 255, 255, 0.15)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive("/user/results")) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
-              }}
-            >
-              <BarChart3 size={18} />
-              <span>Results</span>
-            </Link>
-
-            {/* User Menu */}
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={["click"]}
-            >
-              <div
-                style={{
-                  marginLeft: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "6px 16px 6px 6px",
-                  borderRadius: "12px",
-                  background: "rgba(255, 255, 255, 0.15)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  transition: "all 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background =
-                    "rgba(255, 255, 255, 0.25)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background =
-                    "rgba(255, 255, 255, 0.15)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                <Avatar
-                  size={32}
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                    fontWeight: "bold",
-                    border: "2px solid white",
-                  }}
-                  icon={<User size={18} />}
-                />
-                <span
-                  style={{ color: "white", fontWeight: 600, fontSize: "14px" }}
-                >
-                  Account
-                </span>
-              </div>
-            </Dropdown>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <Button
-            type="text"
-            icon={mobileMenuOpen ? <X size={24} /> : <AlignJustify size={24} />}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{
-              color: "white",
-              display: "none",
-              padding: "8px",
-              height: "auto",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "8px",
-            }}
-            className="mobile-menu-btn"
-          />
-        </div>
-      </Header>
-
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: "64px",
-            left: 0,
-            right: 0,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            padding: "20px",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
-            zIndex: 999,
-            animation: "slideDown 0.3s ease",
-          }}
-          className="mobile-menu"
-        >
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            <Link
-              to="/user/quizzes"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "14px 20px",
-                borderRadius: "10px",
-                color: "#fff",
-                background: isActive("/user/quizzes")
-                  ? "rgba(255, 255, 255, 0.25)"
-                  : "rgba(255, 255, 255, 0.1)",
-                fontWeight: 600,
-                fontSize: "16px",
-                textDecoration: "none",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-              }}
-            >
-              <ClipboardList size={20} />
-              <span>My Quizzes</span>
-            </Link>
+        <div className="absolute inset-x-0 top-full border-b border-slate-200 bg-white p-4 shadow-lg md:hidden">
+          <div className="flex flex-col gap-2">
+            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={navLinkClass(isActive(to), true)}
+              >
+                <Icon size={20} />
+                <span>{label}</span>
+              </Link>
+            ))}
 
-            <Link
-              to="/user/results"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "14px 20px",
-                borderRadius: "10px",
-                color: "#fff",
-                background: isActive("/user/results")
-                  ? "rgba(255, 255, 255, 0.25)"
-                  : "rgba(255, 255, 255, 0.1)",
-                fontWeight: 600,
-                fontSize: "16px",
-                textDecoration: "none",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-              }}
-            >
-              <BarChart3 size={20} />
-              <span>Results</span>
-            </Link>
+            <div className="my-1 h-px bg-slate-200" />
 
-            <div
-              style={{
-                height: "1px",
-                background: "rgba(255, 255, 255, 0.2)",
-                margin: "8px 0",
-              }}
-            />
-
-            <Button
-              type="text"
-              icon={<LogOut size={20} />}
+            <button
+              type="button"
               onClick={() => {
                 setMobileMenuOpen(false);
                 handleLogout();
               }}
-              style={{
-                color: "white",
-                fontWeight: 600,
-                fontSize: "16px",
-                height: "auto",
-                padding: "14px 20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                gap: "12px",
-                borderRadius: "10px",
-                background: "rgba(255, 255, 255, 0.1)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-              }}
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-red-100 bg-white px-5 py-3.5 text-base font-semibold text-red-600 transition-colors hover:bg-red-50"
             >
+              <LogOut size={20} />
               Log Out
-            </Button>
+            </button>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @media (max-width: 768px) {
-          .desktop-nav {
-            display: none !important;
-          }
-          .mobile-menu-btn {
-            display: flex !important;
-          }
-        }
-
-        @media (min-width: 769px) {
-          .mobile-menu {
-            display: none !important;
-          }
-        }
-      `}</style>
-    </>
+    </header>
   );
 };
 

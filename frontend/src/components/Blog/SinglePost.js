@@ -1,5 +1,24 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import blogImg1 from "../../assets/images/blog/1.jpg";
+
+const UserIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 
 const SinglePost = (props) => {
   const {
@@ -11,54 +30,55 @@ const SinglePost = (props) => {
     blogAuthor,
     blogPublishedDate,
   } = props;
-  console.log("Image URL for blog ID", blogID, ":", blogImage);
+
+  const blogUrl = `/blog/${blogID}`;
+  const title = blogTitle ? blogTitle : "How to growing your business";
+
   return (
     <div
-      className={`${
-        blogClass ? blogClass : "blog__card mb-50"
-      } h-full flex flex-col justify-between`}
+      className={`${blogClass ? blogClass : "mb-[50px]"} flex h-full flex-col`}
     >
-      <div className="blog__thumb w-img p-relative">
-        <Link to={`/blog/${blogID}`} className="blog__thumb--image">
-          <img src={blogImage} alt={blogTitle || "Blog"} />
-        </Link>
-        <em className="b_date">
-          {blogPublishedDate ? blogPublishedDate : "April 18"}
-        </em>
-      </div>
-      <div className="blog__card--content">
-        <div className="blog__card--content-area mb-25">
-          <span className="blog__card--date">
+      <article className="group flex h-full flex-col overflow-hidden rounded-[10px] border border-line bg-white font-body shadow-card transition duration-200 hover:-translate-y-1.5 hover:border-gold/40 hover:shadow-lift">
+        {/* ── Thumbnail ── */}
+        <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-navy-mid">
+          <Link to={blogUrl} className="block h-full w-full">
+            <img
+              src={blogImage || blogImg1}
+              alt={blogTitle || "Blog"}
+              loading="lazy"
+              className="block h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </Link>
+          <span className="absolute bottom-3 left-3 rounded bg-navy/80 px-2.5 py-1 text-xs font-medium leading-none text-white backdrop-blur-sm">
+            {blogPublishedDate ? blogPublishedDate : "April 18"}
+          </span>
+        </div>
+
+        {/* ── Content ── */}
+        <div className="flex flex-1 flex-col p-5 sm:p-6">
+          <span className="mb-3 w-fit rounded bg-gold/15 px-2.5 py-1 text-[11px] font-semibold uppercase leading-none tracking-[0.1em] text-navy">
             {blogCategory ? blogCategory : "Education"}
           </span>
-          <h3 className="blog__card--title">
-            <Link to={`/blog/${blogID}`}>
-              {" "}
-              {blogTitle ? blogTitle : "How to growing your business"}
+
+          <h3 className="m-0 mb-4 font-display text-xl font-semibold leading-[1.35] text-ink">
+            <Link
+              to={blogUrl}
+              className="line-clamp-2 text-inherit no-underline transition-colors hover:text-gold"
+            >
+              {title}
             </Link>
           </h3>
-        </div>
-        <div className="blog__card--icon d-flex align-items-center">
-          <div className="blog__card--icon-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="feather feather-user"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span>{blogAuthor ? blogAuthor : "Charlie Doyle"}</span>
+
+          <div className="mt-auto flex items-center gap-2 border-t border-line pt-4 text-[13px] text-ink-mid">
+            <span className="text-gold">
+              <UserIcon />
+            </span>
+            <span className="truncate font-medium">
+              {blogAuthor ? blogAuthor : "Charlie Doyle"}
+            </span>
           </div>
         </div>
-      </div>
+      </article>
     </div>
   );
 };

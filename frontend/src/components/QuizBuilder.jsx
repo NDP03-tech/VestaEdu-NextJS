@@ -3,7 +3,30 @@ import { useParams, useNavigate } from "react-router-dom";
 import QuizInfo from "./QuizInfo/QuizInfo";
 import QuestionFormTest from "./QuestionForm/QuestionFormTest";
 import config from "../config";
-import "./QuizBuilder.css";
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helpers                                        */
+/* ------------------------------------------------------------------ */
+
+const Spinner = ({ className = "h-4 w-4" }) => (
+  <span
+    className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+    aria-hidden="true"
+  />
+);
+
+const Badge = ({ className, children }) => (
+  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+    {children}
+  </span>
+);
+
+const buttonBase =
+  "inline-flex min-w-[96px] cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-70";
+
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
 
 const QuizBuilder = () => {
   const { quizId } = useParams();
@@ -15,19 +38,23 @@ const QuizBuilder = () => {
   const [saving, setSaving] = useState(false);
   const [focusedQuestionId, setFocusedQuestionId] = useState(null);
 
+  const savedCount = questions.filter((q) => q.id).length;
+
+  /* ----------------------------- Effects ----------------------------- */
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const quizRes = await fetch(`${config.API_URL}/api/quizzes/${quizId}`);
         if (!quizRes.ok) throw new Error("Quiz not found.");
         const quizData = await quizRes.json();
-        console.log("✅ Quiz Info:", quizData);
         setQuizInfo(quizData);
 
-        const questionRes = await fetch(`${config.API_URL}/api/questions/by-quiz/${quizId}`);
+        const questionRes = await fetch(
+          `${config.API_URL}/api/questions/by-quiz/${quizId}`,
+        );
         if (!questionRes.ok) throw new Error("Failed to fetch questions.");
         const questionsData = await questionRes.json();
-        console.log("✅ Questions Fetched:", questionsData);
         setQuestions(questionsData);
       } catch (err) {
         console.error("❌ Error fetching data:", err);
@@ -41,6 +68,8 @@ const QuizBuilder = () => {
     fetchData();
   }, [quizId, navigate]);
 
+  /* ----------------------------- Handlers ---------------------------- */
+
   const handleSaveQuizInfo = async () => {
     setSaving(true);
     try {
@@ -53,7 +82,6 @@ const QuizBuilder = () => {
       if (!quizRes.ok) throw new Error("Failed to update quiz.");
       const updatedQuiz = await quizRes.json();
       setQuizInfo(updatedQuiz);
-      console.log("✅ Quiz updated!");
 
       // Lọc bỏ các câu hỏi rỗng hoặc trùng lặp
       const filteredQuestions = questions.filter((q) => {
@@ -98,7 +126,7 @@ const QuizBuilder = () => {
             if (!res.ok) throw new Error("Failed to create question.");
             return await res.json();
           }
-        })
+        }),
       );
 
       setQuestions(updatedQuestions);
@@ -117,7 +145,7 @@ const QuizBuilder = () => {
     } else {
       setQuestions((prev) => [...prev, newQuestion]);
     }
-    // Scroll to bottom after adding
+    // Cuộn xuống cuối sau khi thêm
     setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }, 100);
@@ -129,9 +157,10 @@ const QuizBuilder = () => {
 
     try {
       if (questionId) {
-        const res = await fetch(`${config.API_URL}/api/questions/${questionId}`, {
-          method: "DELETE",
-        });
+        const res = await fetch(
+          `${config.API_URL}/api/questions/${questionId}`,
+          { method: "DELETE" },
+        );
 
         if (!res.ok) throw new Error("Failed to delete question.");
       }
@@ -169,70 +198,72 @@ const QuizBuilder = () => {
     setFocusedQuestionId(questionId);
   };
 
+  /* ------------------------------ Render ----------------------------- */
+
   if (loading) {
     return (
-      <div className="quiz-builder-loading">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-3">⏳ Loading quiz data...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50 text-slate-600">
+        <Spinner className="h-8 w-8 text-blue-600" />
+        <p className="m-0 text-base font-medium">Loading quiz data...</p>
       </div>
     );
   }
 
   return (
-    <div className="quiz-builder-container">
+    <div className="min-h-screen bg-slate-50 pb-28 sm:pb-24">
       {/* Header */}
-      <div className="quiz-builder-header">
-        <div className="header-content">
+      <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-6 sm:px-8">
           <button
-            className="btn btn-outline-light btn-sm back-btn"
+            type="button"
             onClick={() => navigate("/quiz-manage")}
+            className="cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
           >
-            ← Back to Quiz List
+            ← Back to quiz list
           </button>
-          <h2 className="header-title">
-            <span className="icon">📝</span>
-            Quiz Builder
+          <h2 className="m-0 text-2xl font-semibold tracking-tight text-slate-900">
+            Quiz builder
           </h2>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="quiz-builder-content">
-        {/* Quiz Info Section */}
-        <div className="quiz-info-section">
+      <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-8 sm:py-8">
+        {/* Quiz info */}
+        <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <QuizInfo
             quizId={quizId}
             quizInfo={quizInfo}
             onQuizInfoChange={setQuizInfo}
           />
-        </div>
+        </section>
 
-        {/* Questions Section */}
-        <div className="questions-section">
-          <div className="section-header">
-            <h4 className="section-title">
-              <span className="icon">❓</span>
+        {/* Questions */}
+        <section>
+          <div className="mb-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <h4 className="m-0 text-xl font-semibold text-slate-900">
               Questions ({questions.length})
             </h4>
           </div>
 
           {questions.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <h5>No questions yet</h5>
-              <p className="text-muted">
-                Click "Add Question" button below to create your first question
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-8 py-16 text-center">
+              <h5 className="m-0 mb-2 text-xl font-semibold text-slate-900">
+                No questions yet
+              </h5>
+              <p className="m-0 text-base text-slate-500">
+                Click the "Add question" button below to create your first
+                question.
               </p>
             </div>
           ) : (
-            <div className="questions-list">
+            <div className="flex flex-col gap-6">
               {questions.map((question, index) => (
                 <div
                   key={question.id || index}
-                  className={`question-wrapper ${
-                    focusedQuestionId === question.id ? "focused" : ""
+                  className={`rounded-xl transition-shadow duration-200 ${
+                    focusedQuestionId === question.id
+                      ? "ring-4 ring-blue-500/30"
+                      : ""
                   }`}
                 >
                   <QuestionFormTest
@@ -248,65 +279,64 @@ const QuizBuilder = () => {
               ))}
             </div>
           )}
-        </div>
+        </section>
+      </main>
 
-        {/* Action Bar */}
-        <div className="action-bar">
-          <div className="action-bar-content">
-            <div className="action-info">
-              <span className="badge bg-info me-2">
-                {questions.length}{" "}
-                {questions.length === 1 ? "Question" : "Questions"}
-              </span>
-              {questions.filter((q) => q.id).length > 0 && (
-                <span className="badge bg-success">
-                  {questions.filter((q) => q.id).length} Saved
-                </span>
+      {/* Action bar */}
+      <div className="fixed inset-x-0 bottom-0 z-[1000] border-t border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-3 px-4 py-3 sm:flex-row sm:justify-between sm:px-8">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Badge className="bg-blue-50 text-blue-700">
+              {questions.length}{" "}
+              {questions.length === 1 ? "Question" : "Questions"}
+            </Badge>
+            {savedCount > 0 && (
+              <Badge className="bg-emerald-50 text-emerald-700">
+                {savedCount} Saved
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
+            <button
+              type="button"
+              onClick={() => handleAddQuestion({})}
+              className={`${buttonBase} bg-blue-600 text-white hover:bg-blue-700`}
+            >
+              + Add question
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/quiz-manage")}
+              className={`${buttonBase} border border-slate-300 bg-white text-slate-700 hover:bg-slate-100`}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate(`/user/do-quiz/${quizId}`)}
+              className={`${buttonBase} border border-blue-200 bg-white text-blue-700 hover:bg-blue-50`}
+            >
+              Preview quiz
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveQuizInfo}
+              disabled={saving}
+              className={`${buttonBase} bg-emerald-600 text-white hover:bg-emerald-700`}
+            >
+              {saving ? (
+                <>
+                  <Spinner />
+                  Saving...
+                </>
+              ) : (
+                "Save quiz"
               )}
-            </div>
-            <div className="action-buttons">
-              {/* ✅ Add Question Button - Moved Here */}
-              <button
-                className="btn btn-primary"
-                onClick={() => handleAddQuestion({})}
-              >
-                <span className="me-2">➕</span>
-                Add Question
-              </button>
-
-              <button
-                className="btn btn-outline-secondary"
-                onClick={() => navigate("/quiz-manage")}
-              >
-                Cancel
-              </button>
-
-              <button
-                className="btn btn-info"
-                onClick={() => navigate(`/user/do-quiz/${quizId}`)}
-              >
-                <span className="me-2">👁️</span>
-                Preview Quiz
-              </button>
-
-              <button
-                className="btn btn-success"
-                onClick={handleSaveQuizInfo}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <span className="me-2">💾</span>
-                    Save Quiz
-                  </>
-                )}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
       </div>

@@ -1,4 +1,9 @@
-/* ===== Shake Animation ===== */
+/*
+ * Chỉ giữ những gì Tailwind không diễn đạt gọn được trên phần DOM
+ * được tạo bằng innerHTML / document.createElement.
+ */
+
+/* Rung khi double-click để gỡ đáp án */
 @keyframes shake {
   0%,
   100% {
@@ -23,14 +28,24 @@
   }
 }
 
-/* ===== Draggable Answer Tags ===== */
-.draggable-answer-tag:active {
-  cursor: grabbing !important;
+/* Gap đang được kéo đáp án qua */
+.drag-drop-gap.is-over {
+  border-style: solid !important;
+  border-color: #3b82f6 !important;
+  background-color: #dbeafe !important;
+  transform: scale(1.05) !important;
 }
 
-/* ===== Gap Tooltips ===== */
-.drag-drop-gap {
-  position: relative;
+/* Tooltip của gap (dựa trên thuộc tính title) */
+@keyframes gap-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .drag-drop-gap[title]:hover::before {
@@ -48,7 +63,7 @@
   pointer-events: none;
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.2s ease;
+  animation: gap-tooltip-in 0.2s ease;
 }
 
 .drag-drop-gap[title]:hover::after {
@@ -61,21 +76,10 @@
   border-top-color: rgba(0, 0, 0, 0.85);
   pointer-events: none;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  animation: gap-tooltip-in 0.2s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* ===== Drag Drop Content Spacing ===== */
+/* Khoảng cách dòng và đoạn trong nội dung câu hỏi (HTML từ TinyMCE) */
 .drag-drop-content {
   line-height: 2.2 !important;
 }
@@ -84,35 +88,6 @@
   margin-bottom: 16px;
 }
 
-/* ===== Gap Content ===== */
-.gap-content {
-  display: inline-block;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ===== Responsive Design ===== */
-@media (max-width: 768px) {
-  .drag-drop-gap {
-    min-width: 80px !important;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
-  }
-
-  .draggable-answer-tag {
-    padding: 4px 10px !important;
-    font-size: 13px !important;
-  }
-
-  .drag-drop-gap[title]:hover::before {
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-}
-
-/* ===== Print Styles ===== */
 @media print {
   .drag-drop-gap[title]:hover::before,
   .drag-drop-gap[title]:hover::after {

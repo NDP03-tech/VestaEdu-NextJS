@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Tag, Spin, Typography, Button, Card, Space } from "antd";
+import { Table, Tag, Spin, Button } from "antd";
 import moment from "moment";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
@@ -8,7 +8,18 @@ import "jspdf-autotable";
 import { DownloadOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import config from "../config";
 
-const { Title, Text } = Typography;
+// Chuẩn hóa đáp án để so sánh
+const normalizeAnswer = (answer) => {
+  if (!answer) return "";
+  return answer.toString().trim().toLowerCase().replace(/\s+/g, " ");
+};
+
+const StatBlock = ({ label, children }) => (
+  <div>
+    <p className="m-0 text-sm text-slate-500">{label}</p>
+    {children}
+  </div>
+);
 
 const QuizResultTable = () => {
   const { userId, quizId } = useParams();
@@ -18,12 +29,6 @@ const QuizResultTable = () => {
   const [questionParts, setQuestionParts] = useState([]);
   const [correctAnswersRow, setCorrectAnswersRow] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Hàm chuẩn hóa đáp án để so sánh
-  const normalizeAnswer = (answer) => {
-    if (!answer) return "";
-    return answer.toString().trim().toLowerCase().replace(/\s+/g, " "); // Thay nhiều khoảng trắng thành 1
-  };
 
   const fetchResults = async () => {
     setLoading(true);
@@ -35,10 +40,8 @@ const QuizResultTable = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
-
-      console.log("📦 API Response:", res.data);
 
       const { attempts, bestAttempt, questionParts, correctAnswersRow } =
         res.data;
@@ -125,14 +128,14 @@ const QuizResultTable = () => {
       align: "center",
       width: 100,
       render: (attemptNumber, record, index) => (
-        <Space>
+        <span className="inline-flex items-center gap-2">
           <span>{attemptNumber}</span>
           {index === 0 && (
-            <Tag color="gold" style={{ fontSize: 10 }}>
+            <Tag color="gold" style={{ fontSize: 10, margin: 0 }}>
               BEST
             </Tag>
           )}
-        </Space>
+        </span>
       ),
     },
     {
@@ -157,14 +160,14 @@ const QuizResultTable = () => {
     },
   ];
 
-  // Tạo columns với đáp án đúng làm header thay vì Gap 1, 2, 3
+  // Cột đáp án: header là đáp án đúng thay vì "Gap 1, 2, 3"
   const answerColumns = correctAnswersRow.map((correctAnswer, idx) => ({
     title: (
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontWeight: "bold", color: "#52c41a" }}>
+      <div className="text-center">
+        <div className="font-semibold text-emerald-600">
           {correctAnswer || `Q${idx + 1}`}
         </div>
-        <div style={{ fontSize: 11, color: "#999", fontWeight: "normal" }}>
+        <div className="text-[11px] font-normal text-slate-400">
           (Correct Answer)
         </div>
       </div>
@@ -176,30 +179,23 @@ const QuizResultTable = () => {
       const userAnswer = record.userAnswersRow?.[idx];
       const answerStatus = record.answerStatusRow?.[idx];
 
-      // Nếu không có status (câu hỏi không chấm điểm)
+      // Không có status (câu hỏi không chấm điểm)
       if (answerStatus === null || answerStatus === undefined) {
         return <Tag color="default">{userAnswer || "—"}</Tag>;
       }
 
-      // So sánh với chuẩn hóa
-      const normalizedUser = normalizeAnswer(userAnswer);
-      const normalizedCorrect = normalizeAnswer(correctAnswer);
-      const isCorrect = normalizedUser === normalizedCorrect;
+      const isCorrect =
+        normalizeAnswer(userAnswer) === normalizeAnswer(correctAnswer);
 
       return (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          <Tag color={isCorrect ? "green" : "red"}>{userAnswer || "—"}</Tag>
+        <div className="flex flex-col items-center gap-1">
+          <Tag color={isCorrect ? "green" : "red"} style={{ margin: 0 }}>
+            {userAnswer || "—"}
+          </Tag>
           {!isCorrect && userAnswer && (
-            <Text type="secondary" style={{ fontSize: 11 }}>
+            <span className="text-[11px] text-slate-500">
               Expected: {correctAnswer}
-            </Text>
+            </span>
           )}
         </div>
       );
@@ -207,116 +203,97 @@ const QuizResultTable = () => {
   }));
 
   return (
-    <div style={{ padding: 24, minHeight: "100vh", background: "#f5f5f5" }}>
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <Title level={3} style={{ margin: 0 }}>
-                📊 Quiz Results
-              </Title>
-              {bestAttempt && (
-                <Text type="secondary">
-                  {bestAttempt.user?.firstName || bestAttempt.user?.email} -{" "}
-                  {bestAttempt.quiz?.title}
-                </Text>
-              )}
-            </div>
-            <Space>
-              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-                Back
-              </Button>
-              <Button
-                type="primary"
-                icon={<DownloadOutlined />}
-                onClick={exportToPDF}
-                disabled={!bestAttempt}
-              >
-                Export PDF
-              </Button>
-            </Space>
-          </div>
-
-          {/* Best Score Card */}
-          {bestAttempt && (
-            <Card size="small" style={{ background: "#f0f9ff" }}>
-              <Space size={24}>
-                <div>
-                  <Text type="secondary">Best Score</Text>
-                  <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
-                    {bestAttempt.score}%
-                  </Title>
-                </div>
-                <div>
-                  <Text type="secondary">Total Attempts</Text>
-                  <Title level={2} style={{ margin: 0 }}>
-                    {data.length}
-                  </Title>
-                </div>
-                <div>
-                  <Text type="secondary">Status</Text>
-                  <div>
-                    <Tag
-                      color={bestAttempt.passed ? "green" : "red"}
-                      style={{ fontSize: 16, padding: "4px 12px" }}
-                    >
-                      {bestAttempt.passed ? "PASSED" : "FAILED"}
-                    </Tag>
-                  </div>
-                </div>
-              </Space>
-            </Card>
-          )}
-
-          {/* Results Table */}
-          <Spin spinning={loading}>
-            <Table
-              columns={[...baseColumns, ...answerColumns]}
-              dataSource={data}
-              rowKey={(record) => `${record.id}-${record.attemptNumber}`}
-              pagination={false}
-              bordered
-              scroll={{ x: "max-content" }}
-              rowClassName={(record, index) =>
-                index === 0 ? "best-attempt-row" : ""
-              }
-            />
-
-            {/* Correct Answers Summary */}
-            {correctAnswersRow.length > 0 && (
-              <Card
-                size="small"
-                title="✅ Answer Key"
-                style={{ marginTop: 16, background: "#f6ffed" }}
-              >
-                <Space wrap>
-                  {correctAnswersRow.map((answer, idx) => (
-                    <Tag key={idx} color="success" style={{ fontSize: 13 }}>
-                      {idx + 1}. {answer || "—"}
-                    </Tag>
-                  ))}
-                </Space>
-              </Card>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="m-0 text-2xl font-semibold tracking-tight text-slate-900">
+              Quiz results
+            </h3>
+            {bestAttempt && (
+              <p className="m-0 mt-1 text-sm text-slate-500">
+                {bestAttempt.user?.firstName || bestAttempt.user?.email} -{" "}
+                {bestAttempt.quiz?.title}
+              </p>
             )}
-          </Spin>
-        </Space>
-      </Card>
+          </div>
+          <div className="flex gap-2">
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+              Back
+            </Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={exportToPDF}
+              disabled={!bestAttempt}
+            >
+              Export PDF
+            </Button>
+          </div>
+        </div>
 
-      <style jsx>{`
-        .best-attempt-row {
-          background-color: #fffbe6 !important;
-        }
-        .best-attempt-row:hover {
-          background-color: #fff9db !important;
-        }
-      `}</style>
+        {/* Best score */}
+        {bestAttempt && (
+          <div className="flex flex-wrap gap-x-10 gap-y-4 rounded-lg border border-blue-100 bg-blue-50/60 px-5 py-4">
+            <StatBlock label="Best score">
+              <p className="m-0 text-3xl font-semibold text-blue-600">
+                {bestAttempt.score}%
+              </p>
+            </StatBlock>
+            <StatBlock label="Total attempts">
+              <p className="m-0 text-3xl font-semibold text-slate-900">
+                {data.length}
+              </p>
+            </StatBlock>
+            <StatBlock label="Status">
+              <Tag
+                color={bestAttempt.passed ? "green" : "red"}
+                style={{ fontSize: 16, padding: "4px 12px", marginTop: 4 }}
+              >
+                {bestAttempt.passed ? "PASSED" : "FAILED"}
+              </Tag>
+            </StatBlock>
+          </div>
+        )}
+
+        {/* Results table */}
+        <Spin spinning={loading}>
+          <Table
+            columns={[...baseColumns, ...answerColumns]}
+            dataSource={data}
+            rowKey={(record) => `${record.id}-${record.attemptNumber}`}
+            pagination={false}
+            bordered
+            scroll={{ x: "max-content" }}
+            rowClassName={(record, index) =>
+              index === 0
+                ? "[&>td]:!bg-amber-50 hover:[&>td]:!bg-amber-100"
+                : ""
+            }
+          />
+
+          {/* Answer key */}
+          {correctAnswersRow.length > 0 && (
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <h4 className="m-0 mb-3 text-sm font-semibold text-emerald-800">
+                Answer key
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {correctAnswersRow.map((answer, idx) => (
+                  <Tag
+                    key={idx}
+                    color="success"
+                    style={{ fontSize: 13, margin: 0 }}
+                  >
+                    {idx + 1}. {answer || "—"}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
+        </Spin>
+      </div>
     </div>
   );
 };

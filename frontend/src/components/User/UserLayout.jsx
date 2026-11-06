@@ -1,19 +1,14 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { Layout } from 'antd';
-import UserHeader from './userHeader';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import UserHeader from "./userHeader";
 
-const { Content } = Layout;
-
-const UserLayout = () => {
-  return (
-    <Layout>
-      <UserHeader />
-      <Content>
-        <Outlet />
-      </Content>
-    </Layout>
-  );
-};
+const UserLayout = () => (
+  <div className="flex min-h-screen flex-col bg-slate-50">
+    <UserHeader />
+    <main className="flex-1">
+      <Outlet />
+    </main>
+  </div>
+);
 
 export default UserLayout;

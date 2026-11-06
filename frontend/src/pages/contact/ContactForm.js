@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import emailjs from "emailjs-com";
 
+// Shared class strings (replace the old .cf-* CSS classes)
+const labelCls =
+  "mb-2 block text-[10px] font-semibold uppercase tracking-[2.5px] text-[#a0a0a0]";
+
+const fieldCls =
+  "w-full box-border rounded-xl border-[1.5px] border-[#e8e6e0] bg-[#fafaf8] " +
+  "font-['DM_Sans',sans-serif] text-sm text-[#1a1a1a] outline-none " +
+  "transition-all duration-200 placeholder:text-[#b0aca4] " +
+  "hover:border-[#c9943a] " +
+  "focus:border-[#d4a843] focus:bg-white focus:ring-[3px] focus:ring-[#d4a843]/[0.12]";
+
+const inputCls = `${fieldCls} h-[52px] px-[18px]`;
+const textareaCls = `${fieldCls} min-h-[140px] resize-y px-[18px] py-4 leading-[1.7]`;
+
 const ContactForm = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -31,208 +45,44 @@ const ContactForm = () => {
 
   return (
     <>
+      {/* Only things Tailwind can't express inline: font import + fadeIn keyframes.
+          (Better: move these into your global CSS / tailwind.config.) */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-        .cf-wrap {
-          font-family: 'DM Sans', sans-serif;
-        }
-
-        .cf-input, .cf-textarea {
-          width: 100%;
-          background: #fafaf8;
-          border: 1.5px solid #e8e6e0;
-          border-radius: 12px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          color: #1a1a1a;
-          outline: none;
-          transition: all 0.25s ease;
-          box-sizing: border-box;
-        }
-
-        .cf-input {
-          height: 52px;
-          padding: 0 18px;
-        }
-
-        .cf-textarea {
-          padding: 16px 18px;
-          resize: vertical;
-          min-height: 140px;
-          line-height: 1.7;
-        }
-
-        .cf-input::placeholder, .cf-textarea::placeholder {
-          color: #b0aca4;
-        }
-
-        .cf-input:focus, .cf-textarea:focus {
-          border-color: #d4a843;
-          background: #ffffff;
-          box-shadow: 0 0 0 3px rgba(212,168,67,0.12);
-        }
-
-        .cf-input:hover, .cf-textarea:hover {
-          border-color: #c9943a;
-        }
-
-        .cf-label {
-          display: block;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 2.5px;
-          text-transform: uppercase;
-          color: #a0a0a0;
-          margin-bottom: 8px;
-        }
-
-        .cf-submit {
-          width: 100%;
-          padding: 17px 24px;
-          background: linear-gradient(135deg, #f0c96a 0%, #d4a843 100%);
-          border: none;
-          border-radius: 12px;
-          color: #0d1b2a;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 1.8px;
-          text-transform: uppercase;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: all 0.3s ease;
-          box-shadow: 0 8px 28px rgba(212,168,67,0.38);
-        }
-
-        .cf-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 14px 40px rgba(212,168,67,0.52);
-        }
-
-        .cf-submit:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .cf-submit:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          box-shadow: none;
-        }
-
-        .cf-success {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(52,199,89,0.1);
-          border: 1px solid rgba(52,199,89,0.3);
-          border-radius: 12px;
-          padding: 14px 20px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #1a7a3a;
-          margin-top: 16px;
-          animation: fadeIn 0.4s ease;
-        }
-
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .cf-spinner {
-          animation: spin 0.8s linear infinite;
-        }
       `}</style>
 
-      <div className="cf-wrap">
+      <div className="font-['DM_Sans',sans-serif]">
         {/* ── Header ── */}
-        <div style={{ marginBottom: "40px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "14px",
-            }}
-          >
-            <span
-              style={{
-                width: "32px",
-                height: "2px",
-                background: "linear-gradient(90deg, #d4a843, #f0c96a)",
-                borderRadius: "2px",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontSize: "10px",
-                fontWeight: "600",
-                letterSpacing: "3px",
-                textTransform: "uppercase",
-                color: "#d4a843",
-              }}
-            >
+        <div className="mb-10">
+          <div className="mb-3.5 flex items-center gap-2.5">
+            <span className="h-0.5 w-8 shrink-0 rounded-sm bg-gradient-to-r from-[#d4a843] to-[#f0c96a]" />
+            <span className="text-[10px] font-semibold uppercase tracking-[3px] text-[#d4a843]">
               Contact Us
             </span>
           </div>
 
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(2rem, 4vw, 2.8rem)",
-              fontWeight: "700",
-              color: "#0d1b2a",
-              lineHeight: 1.2,
-              letterSpacing: "-0.5px",
-              margin: 0,
-            }}
-          >
+          <h2 className="m-0 font-['Cormorant_Garamond',serif] text-[clamp(2rem,4vw,2.8rem)] font-bold leading-[1.2] tracking-[-0.5px] text-[#0d1b2a]">
             Questions?
             <br />
-            <em
-              style={{
-                fontStyle: "italic",
-                fontWeight: "600",
-                color: "#1e3a5f",
-              }}
-            >
+            <em className="font-semibold italic text-[#1e3a5f]">
               Feel free to contact us.
             </em>
           </h2>
         </div>
 
         {/* ── Form card ── */}
-        <div
-          style={{
-            background: "#ffffff",
-            borderRadius: "24px",
-            border: "1px solid #e8e6e0",
-            boxShadow: "0 8px 40px rgba(13,27,42,0.08)",
-            padding: "40px",
-          }}
-        >
+        <div className="rounded-3xl border border-[#e8e6e0] bg-white p-6 shadow-[0_8px_40px_rgba(13,27,42,0.08)] sm:p-10">
           <form id="contact-form" onSubmit={sendEmail}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "20px",
-              }}
-            >
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {/* Name */}
               <div>
-                <label className="cf-label">Full Name</label>
+                <label className={labelCls}>Full Name</label>
                 <input
-                  className="cf-input"
+                  className={inputCls}
                   type="text"
                   name="user_name"
                   required
@@ -242,9 +92,9 @@ const ContactForm = () => {
 
               {/* Email */}
               <div>
-                <label className="cf-label">Email Address</label>
+                <label className={labelCls}>Email Address</label>
                 <input
-                  className="cf-input"
+                  className={inputCls}
                   type="email"
                   name="user_email"
                   required
@@ -254,9 +104,9 @@ const ContactForm = () => {
 
               {/* Subject */}
               <div>
-                <label className="cf-label">Subject</label>
+                <label className={labelCls}>Subject</label>
                 <input
-                  className="cf-input"
+                  className={inputCls}
                   type="text"
                   name="user_subject"
                   required
@@ -266,9 +116,9 @@ const ContactForm = () => {
 
               {/* Phone */}
               <div>
-                <label className="cf-label">Phone Number</label>
+                <label className={labelCls}>Phone Number</label>
                 <input
-                  className="cf-input"
+                  className={inputCls}
                   type="text"
                   name="user_phone"
                   required
@@ -277,10 +127,10 @@ const ContactForm = () => {
               </div>
 
               {/* Message — full width */}
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label className="cf-label">Message</label>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>Message</label>
                 <textarea
-                  className="cf-textarea"
+                  className={textareaCls}
                   name="user_message"
                   required
                   placeholder="Write your message here..."
@@ -288,22 +138,19 @@ const ContactForm = () => {
               </div>
 
               {/* Divider */}
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  height: "1px",
-                  background:
-                    "linear-gradient(90deg, #d4a843, #e8e6e0 60%, transparent)",
-                }}
-              />
+              <div className="h-px bg-gradient-to-r from-[#d4a843] via-[#e8e6e0] via-60% to-transparent sm:col-span-2" />
 
               {/* Submit — full width */}
-              <div style={{ gridColumn: "1 / -1" }}>
-                <button className="cf-submit" type="submit" disabled={sending}>
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border-0 bg-gradient-to-br from-[#f0c96a] to-[#d4a843] px-6 py-[17px] font-['DM_Sans',sans-serif] text-sm font-bold uppercase tracking-[1.8px] text-[#0d1b2a] shadow-[0_8px_28px_rgba(212,168,67,0.38)] transition-all duration-300 hover:enabled:-translate-y-0.5 hover:enabled:shadow-[0_14px_40px_rgba(212,168,67,0.52)] active:enabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
+                >
                   {sending ? (
                     <>
                       <svg
-                        className="cf-spinner"
+                        className="animate-spin"
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"
@@ -338,7 +185,7 @@ const ContactForm = () => {
 
                 {/* Success message */}
                 {sent && (
-                  <div className="cf-success">
+                  <div className="mt-4 flex animate-[fadeIn_0.4s_ease] items-center gap-2.5 rounded-xl border border-[#34c759]/30 bg-[#34c759]/10 px-5 py-3.5 text-sm font-medium text-[#1a7a3a]">
                     <svg
                       width="18"
                       height="18"
@@ -356,16 +203,7 @@ const ContactForm = () => {
                   </div>
                 )}
 
-                <p
-                  style={{
-                    textAlign: "center",
-                    fontSize: "12px",
-                    color: "#a0a0a0",
-                    marginTop: "14px",
-                    marginBottom: 0,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
+                <p className="mb-0 mt-3.5 text-center font-['DM_Sans',sans-serif] text-xs text-[#a0a0a0]">
                   🔒 Your information is kept strictly confidential
                 </p>
               </div>

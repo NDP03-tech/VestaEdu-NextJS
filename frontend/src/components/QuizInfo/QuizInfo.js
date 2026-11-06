@@ -2,23 +2,17 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import config from "../../config";
 import {
-  Card,
   Input,
   Select,
   Button,
   Checkbox,
   Modal,
-  Space,
-  Typography,
-  Row,
-  Col,
-  Collapse,
   InputNumber,
+  Switch,
+  Space,
   message,
 } from "antd";
 import {
-  SettingOutlined,
-  FileTextOutlined,
   FilterOutlined,
   MessageOutlined,
   EyeOutlined,
@@ -28,9 +22,12 @@ import {
 } from "@ant-design/icons";
 import ExplanationEditor from "../Explanation/ExplanationEditor";
 
-const { Title, Text } = Typography;
 const { Option } = Select;
-const { Panel } = Collapse;
+
+/* ------------------------------------------------------------------ */
+/* Constants                                                           */
+/* ------------------------------------------------------------------ */
+
 const defaultSettings = {
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
@@ -48,6 +45,98 @@ const defaultSettings = {
   showInstructionInput: false,
 };
 
+const DISPLAY_TOGGLES = [
+  { key: "oneQuestionPerPage", label: "One question per page" },
+  { key: "showQuestionNumbers", label: "Show question numbers" },
+];
+
+const SHUFFLE_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "questions", label: "Shuffle questions" },
+  { value: "answers", label: "Shuffle answers" },
+  { value: "both", label: "Shuffle questions & answers" },
+];
+
+const MESSAGE_EDITORS = [
+  { key: "headerText", label: "Header text" },
+  { key: "instructionText", label: "Instruction text" },
+  { key: "quizCompleteMessage", label: "Completion message" },
+];
+
+const FEEDBACK_TOGGLES = [
+  { key: "showHeaderInput", label: "Show header input" },
+  { key: "showInstructionInput", label: "Show instruction input" },
+  { key: "showCompletionInput", label: "Show completion input" },
+  { key: "showFeedback", label: "Show feedback" },
+  { key: "displayScore", label: "Display score" },
+];
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helpers                                        */
+/* ------------------------------------------------------------------ */
+
+const Field = ({ label, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-sm font-medium text-slate-700">{label}</label>
+    {children}
+  </div>
+);
+
+const Group = ({ title, children, className = "" }) => (
+  <div
+    className={`rounded-lg border border-slate-200 bg-slate-50/60 p-4 ${className}`}
+  >
+    {title && (
+      <h4 className="mb-3 text-sm font-semibold text-slate-800">{title}</h4>
+    )}
+    {children}
+  </div>
+);
+
+const ToggleRow = ({ label, checked, onChange }) => (
+  <div className="flex items-center justify-between gap-4 rounded-md bg-white px-3 py-2.5 ring-1 ring-slate-200">
+    <span className="text-sm text-slate-700">{label}</span>
+    <Switch size="small" checked={checked} onChange={onChange} />
+  </div>
+);
+
+const AccordionItem = ({
+  icon,
+  iconClass,
+  title,
+  open,
+  onToggle,
+  children,
+}) => (
+  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="flex w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-5 py-4 text-left transition-colors hover:bg-slate-50"
+    >
+      <span className="flex items-center gap-3">
+        <span className={`text-lg ${iconClass}`}>{icon}</span>
+        <span className="text-[15px] font-semibold text-slate-900">
+          {title}
+        </span>
+      </span>
+      <DownOutlined
+        className={`text-xs text-slate-400 transition-transform duration-200 ${
+          open ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+    {open && (
+      <div className="border-t border-slate-200 px-5 py-5">{children}</div>
+    )}
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Main component                                                      */
+/* ------------------------------------------------------------------ */
+
 const QuizInfo = ({ onQuizInfoChange, quizId }) => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -61,26 +150,36 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [assignedClasses, setAssignedClasses] = useState([]);
 
-  // Active panels for collapse
   const [activePanels, setActivePanels] = useState([]);
 
+  const quizLink = `https://vestaedu.online/quiz/${quizId}`;
+
+  const setSetting = (key, value) =>
+    setUiSettings((prev) => ({ ...prev, [key]: value }));
+
+  const togglePanel = (key) =>
+    setActivePanels((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+
+  /* ----------------------------- Effects ----------------------------- */
+
   useEffect(() => {
-    if (quizId) {
-      axios
-        .get(`${config.API_URL}/api/quizzes/${quizId}`)
-        .then((response) => {
-          const quiz = response.data;
-          setTitle(quiz.title || "");
-          setCategory(quiz.category || "");
-          setUiSettings({ ...defaultSettings, ...quiz.uiSettings });
-          const hasClasses = quiz.classes && quiz.classes.length > 0;
-          setVisibleTo(quiz.visibleTo || (hasClasses ? "classes" : "everyone"));
-          setAssignedClasses(quiz.classes || []);
-        })
-        .catch((error) => {
-          console.error("Error fetching quiz:", error);
-        });
-    }
+    if (!quizId) return;
+    axios
+      .get(`${config.API_URL}/api/quizzes/${quizId}`)
+      .then((response) => {
+        const quiz = response.data;
+        setTitle(quiz.title || "");
+        setCategory(quiz.category || "");
+        setUiSettings({ ...defaultSettings, ...quiz.uiSettings });
+        const hasClasses = quiz.classes && quiz.classes.length > 0;
+        setVisibleTo(quiz.visibleTo || (hasClasses ? "classes" : "everyone"));
+        setAssignedClasses(quiz.classes || []);
+      })
+      .catch((error) => {
+        console.error("Error fetching quiz:", error);
+      });
   }, [quizId]);
 
   useEffect(() => {
@@ -119,6 +218,8 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
     }
   }, [assignedClasses, quizId]);
 
+  /* ----------------------------- Handlers ---------------------------- */
+
   const handleSaveCategory = async () => {
     try {
       const res = await axios.post(`${config.API_URL}/api/categories`, {
@@ -136,345 +237,193 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`https://vestaedu.online/quiz/${quizId}`);
+    navigator.clipboard.writeText(quizLink);
     message.success("Link copied to clipboard!");
   };
 
+  const toggleClass = (classId, checked) =>
+    setAssignedClasses((prev) =>
+      checked ? [...prev, classId] : prev.filter((id) => id !== classId),
+    );
+
+  /* ------------------------------ Render ----------------------------- */
+
   return (
-    <div style={{ padding: 0 }}>
+    <div className="w-full space-y-5">
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ marginBottom: 8 }}>
-          ⚙️ Quiz Settings
-        </Title>
-        <Text type="secondary" style={{ fontSize: 16 }}>
-          Configure your quiz settings and options
-        </Text>
-      </div>
+      <header>
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Quiz settings
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Configure your quiz settings and options.
+        </p>
+      </header>
 
-      {/* Basic Info - Always Visible */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          <div>
-            <Text
-              strong
-              style={{ display: "block", marginBottom: 8, fontSize: 15 }}
-            >
-              📋 Quiz Title
-            </Text>
-            <Input
+      {/* Basic info */}
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Field label="Quiz title">
+          <Input
+            size="large"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter your quiz title..."
+          />
+        </Field>
+
+        <Field label="Category">
+          <Space.Compact style={{ width: "100%" }}>
+            <Select
               size="large"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter your quiz title..."
-            />
-          </div>
-
-          <div>
-            <Text
-              strong
-              style={{ display: "block", marginBottom: 8, fontSize: 15 }}
+              className="flex-1"
+              value={category}
+              onChange={setCategory}
+              placeholder="Select a category"
             >
-              🏷️ Category
-            </Text>
-            <Space.Compact style={{ width: "100%" }} size="large">
-              <Select
-                style={{ flex: 1 }}
-                size="large"
-                value={category}
-                onChange={setCategory}
-                placeholder="Select a category"
-              >
-                <Option value="">Select a category</Option>
-                {categories.map((cat, index) => (
-                  <Option key={index} value={cat}>
-                    {cat}
-                  </Option>
+              <Option value="">Select a category</Option>
+              {categories.map((cat, index) => (
+                <Option key={index} value={cat}>
+                  {cat}
+                </Option>
+              ))}
+            </Select>
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={() => setShowCategoryModal(true)}
+              title="Add new category"
+            >
+              Add
+            </Button>
+          </Space.Compact>
+        </Field>
+      </section>
+
+      {/* Advanced settings */}
+      <div className="space-y-3">
+        {/* 1. Display & order */}
+        <AccordionItem
+          icon={<FilterOutlined />}
+          iconClass="text-blue-500"
+          title="Display & order"
+          open={activePanels.includes("1")}
+          onToggle={() => togglePanel("1")}
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Group title="Display options">
+              <div className="space-y-2">
+                {DISPLAY_TOGGLES.map(({ key, label }) => (
+                  <ToggleRow
+                    key={key}
+                    label={label}
+                    checked={uiSettings[key]}
+                    onChange={(checked) => setSetting(key, checked)}
+                  />
                 ))}
-              </Select>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                size="large"
-                onClick={() => setShowCategoryModal(true)}
-                title="Add new category"
-              >
-                Add
-              </Button>
-            </Space.Compact>
+              </div>
+            </Group>
+
+            <Group title="Question order">
+              <Field label="Shuffle mode">
+                <Select
+                  className="w-full"
+                  value={uiSettings.shuffle}
+                  onChange={(value) => setSetting("shuffle", value)}
+                >
+                  {SHUFFLE_OPTIONS.map((opt) => (
+                    <Option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Field>
+            </Group>
+
+            <Group title="Quiz limits">
+              <Field label="Time limit (minutes)">
+                <InputNumber
+                  className="w-full"
+                  min={0}
+                  value={uiSettings.timeLimit || 0}
+                  onChange={(value) => setSetting("timeLimit", value || 0)}
+                  placeholder="0 = No limit"
+                />
+              </Field>
+            </Group>
+
+            <Group title="Attempts">
+              <Field label="Max attempts">
+                <Select
+                  className="w-full"
+                  value={uiSettings.maxAttempts}
+                  onChange={(value) => setSetting("maxAttempts", value)}
+                >
+                  <Option value="Unlimited">Unlimited</Option>
+                  {[1, 2, 3, 4, 5].map((attempt) => (
+                    <Option key={attempt} value={attempt}>
+                      {attempt}
+                    </Option>
+                  ))}
+                </Select>
+              </Field>
+            </Group>
           </div>
-        </Space>
-      </Card>
+        </AccordionItem>
 
-      {/* Collapsible Advanced Settings */}
-      <Collapse
-        activeKey={activePanels}
-        onChange={setActivePanels}
-        expandIcon={({ isActive }) => (
-          <DownOutlined rotate={isActive ? 180 : 0} />
-        )}
-        style={{ marginBottom: 16 }}
-      >
-        {/* Display & Order Settings */}
-        <Panel
-          header={
-            <Space>
-              <FilterOutlined style={{ fontSize: 18, color: "#1890ff" }} />
-              <Text strong style={{ fontSize: 15 }}>
-                Display & Order Settings
-              </Text>
-            </Space>
-          }
-          key="1"
+        {/* 2. Feedback & messages */}
+        <AccordionItem
+          icon={<MessageOutlined />}
+          iconClass="text-emerald-500"
+          title="Feedback & messages"
+          open={activePanels.includes("2")}
+          onToggle={() => togglePanel("2")}
         >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Card
-                title="Display Options"
-                size="small"
-                style={{ height: "100%" }}
-              >
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Checkbox
-                    checked={uiSettings.oneQuestionPerPage}
-                    onChange={(e) =>
-                      setUiSettings((prev) => ({
-                        ...prev,
-                        oneQuestionPerPage: e.target.checked,
-                      }))
-                    }
-                  >
-                    📄 One question per page
-                  </Checkbox>
-                  <Checkbox
-                    checked={uiSettings.showQuestionNumbers}
-                    onChange={(e) =>
-                      setUiSettings((prev) => ({
-                        ...prev,
-                        showQuestionNumbers: e.target.checked,
-                      }))
-                    }
-                  >
-                    🔢 Show question numbers
-                  </Checkbox>
-                </Space>
-              </Card>
-            </Col>
+          <div className="space-y-4">
+            {MESSAGE_EDITORS.map(({ key, label }) => (
+              <Group key={key} title={label}>
+                <ExplanationEditor
+                  value={uiSettings[key]}
+                  onChange={(val) => setSetting(key, val)}
+                />
+              </Group>
+            ))}
 
-            <Col xs={24} md={12}>
-              <Card
-                title="Question Order"
-                size="small"
-                style={{ height: "100%" }}
-              >
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Text type="secondary">🔀 Shuffle Mode</Text>
-                  <Select
-                    style={{ width: "100%" }}
-                    value={uiSettings.shuffle}
-                    onChange={(value) =>
-                      setUiSettings((prev) => ({ ...prev, shuffle: value }))
-                    }
-                  >
-                    <Option value="none">None</Option>
-                    <Option value="questions">Shuffle questions</Option>
-                    <Option value="answers">Shuffle answers</Option>
-                    <Option value="both">Shuffle questions & answers</Option>
-                  </Select>
-                </Space>
-              </Card>
-            </Col>
+            <Group title="Display options">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {FEEDBACK_TOGGLES.map(({ key, label }) => (
+                  <ToggleRow
+                    key={key}
+                    label={label}
+                    checked={uiSettings[key]}
+                    onChange={(checked) => setSetting(key, checked)}
+                  />
+                ))}
+              </div>
+            </Group>
 
-            <Col xs={24} md={12}>
-              <Card title="Quiz Limits" size="small" style={{ height: "100%" }}>
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <div>
-                    <Text type="secondary">⏱️ Time Limit (minutes)</Text>
-                    <InputNumber
-                      style={{ width: "100%", marginTop: 4 }}
-                      value={uiSettings.timeLimit || 0}
-                      onChange={(value) =>
-                        setUiSettings((prev) => ({
-                          ...prev,
-                          timeLimit: value || 0,
-                        }))
-                      }
-                      placeholder="0 = No limit"
-                      min={0}
-                    />
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Card title="Attempts" size="small" style={{ height: "100%" }}>
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Text type="secondary">🔄 Max Attempts</Text>
-                  <Select
-                    style={{ width: "100%" }}
-                    value={uiSettings.maxAttempts}
-                    onChange={(value) =>
-                      setUiSettings((prev) => ({ ...prev, maxAttempts: value }))
-                    }
-                  >
-                    <Option value="Unlimited">Unlimited</Option>
-                    {[1, 2, 3, 4, 5].map((attempt) => (
-                      <Option key={attempt} value={attempt}>
-                        {attempt}
-                      </Option>
-                    ))}
-                  </Select>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-        </Panel>
-
-        {/* Feedback & Messages */}
-        <Panel
-          header={
-            <Space>
-              <MessageOutlined style={{ fontSize: 18, color: "#52c41a" }} />
-              <Text strong style={{ fontSize: 15 }}>
-                Feedback & Messages
-              </Text>
-            </Space>
-          }
-          key="2"
-        >
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
-            <Card title="📌 Header Text" size="small">
-              <ExplanationEditor
-                value={uiSettings.headerText}
-                onChange={(val) =>
-                  setUiSettings((prev) => ({ ...prev, headerText: val }))
-                }
-              />
-            </Card>
-
-            <Card title="📝 Instruction Text" size="small">
-              <ExplanationEditor
-                value={uiSettings.instructionText}
-                onChange={(val) =>
-                  setUiSettings((prev) => ({ ...prev, instructionText: val }))
-                }
-              />
-            </Card>
-
-            <Card title="🎉 Completion Message" size="small">
-              <ExplanationEditor
-                value={uiSettings.quizCompleteMessage}
-                onChange={(val) =>
-                  setUiSettings((prev) => ({
-                    ...prev,
-                    quizCompleteMessage: val,
-                  }))
-                }
-              />
-            </Card>
-
-            <Card title="Display Options" size="small">
-              <Space direction="vertical" style={{ width: "100%" }}>
-                <Checkbox
-                  checked={uiSettings.showHeaderInput}
-                  onChange={(e) =>
-                    setUiSettings((prev) => ({
-                      ...prev,
-                      showHeaderInput: e.target.checked,
-                    }))
-                  }
-                >
-                  📌 Show Header Input
-                </Checkbox>
-                <Checkbox
-                  checked={uiSettings.showInstructionInput}
-                  onChange={(e) =>
-                    setUiSettings((prev) => ({
-                      ...prev,
-                      showInstructionInput: e.target.checked,
-                    }))
-                  }
-                >
-                  📝 Show Instruction Input
-                </Checkbox>
-                <Checkbox
-                  checked={uiSettings.showCompletionInput}
-                  onChange={(e) =>
-                    setUiSettings((prev) => ({
-                      ...prev,
-                      showCompletionInput: e.target.checked,
-                    }))
-                  }
-                >
-                  🎉 Show Completion Input
-                </Checkbox>
-                <Checkbox
-                  checked={uiSettings.showFeedback}
-                  onChange={(e) =>
-                    setUiSettings((prev) => ({
-                      ...prev,
-                      showFeedback: e.target.checked,
-                    }))
-                  }
-                >
-                  💭 Show Feedback
-                </Checkbox>
-                <Checkbox
-                  checked={uiSettings.displayScore}
-                  onChange={(e) =>
-                    setUiSettings((prev) => ({
-                      ...prev,
-                      displayScore: e.target.checked,
-                    }))
-                  }
-                >
-                  ⭐ Display Score
-                </Checkbox>
-              </Space>
-            </Card>
-
-            <div>
-              <Text strong style={{ display: "block", marginBottom: 8 }}>
-                ⚡ Special Characters
-              </Text>
+            <Field label="Special characters">
               <Input
                 value={uiSettings.specialChars}
-                onChange={(e) =>
-                  setUiSettings((prev) => ({
-                    ...prev,
-                    specialChars: e.target.value,
-                  }))
-                }
+                onChange={(e) => setSetting("specialChars", e.target.value)}
                 placeholder="Enter special characters..."
               />
-            </div>
-          </Space>
-        </Panel>
+            </Field>
+          </div>
+        </AccordionItem>
 
-        {/* Visibility Settings */}
-        <Panel
-          header={
-            <Space>
-              <EyeOutlined style={{ fontSize: 18, color: "#faad14" }} />
-              <Text strong style={{ fontSize: 15 }}>
-                Visibility Settings
-              </Text>
-            </Space>
-          }
-          key="3"
+        {/* 3. Visibility */}
+        <AccordionItem
+          icon={<EyeOutlined />}
+          iconClass="text-amber-500"
+          title="Visibility"
+          open={activePanels.includes("3")}
+          onToggle={() => togglePanel("3")}
         >
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
-            <div>
-              <Text strong style={{ display: "block", marginBottom: 8 }}>
-                🔗 Quiz Link
-              </Text>
+          <div className="space-y-4">
+            <Field label="Quiz link">
               <Space.Compact style={{ width: "100%" }}>
-                <Input
-                  value={`https://vestaedu.online/quiz/${quizId}`}
-                  disabled
-                  style={{ fontFamily: "monospace" }}
-                />
+                <Input value={quizLink} disabled className="font-mono" />
                 <Button
                   type="primary"
                   icon={<CopyOutlined />}
@@ -483,76 +432,74 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
                   Copy
                 </Button>
               </Space.Compact>
-            </div>
+            </Field>
 
-            <div>
-              <Text strong style={{ display: "block", marginBottom: 8 }}>
-                👥 Visible To
-              </Text>
+            <Field label="Visible to">
               <Select
-                style={{ width: "100%" }}
+                className="w-full"
                 value={visibleTo}
                 onChange={setVisibleTo}
               >
-                <Option value="everyone">🌍 Everyone</Option>
+                <Option value="everyone">Everyone</Option>
                 <Option value="everyone_record">
-                  📊 Everyone (record answers)
+                  Everyone (record answers)
                 </Option>
-                <Option value="classes">🎓 Learnclick classes</Option>
-                <Option value="just_me">🔒 Just me</Option>
+                <Option value="classes">Learnclick classes</Option>
+                <Option value="just_me">Just me</Option>
               </Select>
-            </div>
+            </Field>
 
             {visibleTo === "classes" && (
-              <Card title="🎓 Assign to Classes" size="small">
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  {availableClasses.map((cls) => (
-                    <Checkbox
-                      key={cls.id}
-                      checked={assignedClasses.includes(cls.id)}
-                      onChange={(e) => {
-                        setAssignedClasses((prev) =>
-                          e.target.checked
-                            ? [...prev, cls.id]
-                            : prev.filter((id) => id !== cls.id)
-                        );
-                      }}
-                    >
-                      {cls.name}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Card>
+              <Group title="Assign to classes">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {availableClasses.map((cls) => {
+                    const checked = assignedClasses.includes(cls.id);
+                    return (
+                      <label
+                        key={cls.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-md border bg-white px-3 py-2.5 text-sm transition-colors ${
+                          checked
+                            ? "border-blue-500 text-blue-600"
+                            : "border-slate-200 text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onChange={(e) =>
+                            toggleClass(cls.id, e.target.checked)
+                          }
+                        />
+                        <span className="font-medium">{cls.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </Group>
             )}
-          </Space>
-        </Panel>
-      </Collapse>
+          </div>
+        </AccordionItem>
+      </div>
 
-      {/* Category Modal */}
+      {/* Category modal */}
       <Modal
-        title={
-          <Space>
-            <span style={{ fontSize: 20 }}>🏷️</span>
-            <Text strong>Add New Category</Text>
-          </Space>
-        }
+        title="Add new category"
         open={showCategoryModal}
         onOk={handleSaveCategory}
         onCancel={() => setShowCategoryModal(false)}
-        okText="💾 Save"
+        okText="Save"
         cancelText="Cancel"
       >
         <Input
+          size="large"
+          autoFocus
           placeholder="Enter category name..."
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
           onPressEnter={handleSaveCategory}
-          size="large"
-          autoFocus
         />
       </Modal>
     </div>
   );
 };
- 
+
 export default QuizInfo;

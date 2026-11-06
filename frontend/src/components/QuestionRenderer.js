@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 import BlankBoxesRenderer from "./renderer/BlankBoxesRenderer";
 import MultipleChoiceRenderer from "./renderer/MultipleChoiceRenderer";
 import CheckboxesRenderer from "./renderer/CheckboxesRenderer";
@@ -9,6 +10,19 @@ import FindHighlightRenderer from "./renderer/FindhighlightRenderer";
 import DragDropRenderer from "./renderer/DragDropRenderer";
 import SpeakingRenderer from "./renderer/SpeakingRenderer";
 import ReadingRenderer from "./renderer/ReadingRenderer";
+
+// Small notice used for invalid / missing / unsupported states
+const Notice = ({ title, children }) => (
+  <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-50">
+      <AlertCircle className="h-4 w-4 text-amber-600" />
+    </div>
+    <div className="space-y-0.5">
+      <p className="text-sm font-medium text-slate-900">{title}</p>
+      {children && <p className="text-xs text-slate-500">{children}</p>}
+    </div>
+  </div>
+);
 
 const QuestionRenderer = ({
   question,
@@ -136,7 +150,7 @@ const QuestionRenderer = ({
       if (showCorrectAnswer && Object.keys(frozenAnswerStatus).length === 0) {
         if (questionType === "checkboxes") {
           setFrozenAnswerStatus(
-            generateCheckboxAnswerStatus(initialAnswer, correctAnswer)
+            generateCheckboxAnswerStatus(initialAnswer, correctAnswer),
           );
         } else if (questionType !== "essay" && questionType !== "description") {
           setFrozenAnswerStatus(getAnswerStatus(initialAnswer, correctAnswer));
@@ -163,12 +177,12 @@ const QuestionRenderer = ({
   // ✅ NOW check for invalid data AFTER all hooks
   if (!question) {
     console.error("❌ QuestionRenderer: question is null/undefined");
-    return <p>Invalid question data</p>;
+    return <Notice title="Invalid question data" />;
   }
 
   if (!questionType) {
     console.error("❌ QuestionRenderer: questionType is missing", question);
-    return <p>Missing question type</p>;
+    return <Notice title="Missing question type" />;
   }
 
   // ✅ Render with error boundaries
@@ -216,7 +230,7 @@ const QuestionRenderer = ({
             showCorrectAnswer={showCorrectAnswer}
             answerStatus={answerStatus}
             onAnswerChange={onAnswerChange}
-            editable={editable} // ✅ ADDED
+            editable={editable}
           />
         );
 
@@ -229,7 +243,7 @@ const QuestionRenderer = ({
             correctAnswer={correctAnswer}
             showCorrectAnswer={showCorrectAnswer}
             answerStatus={answerStatus}
-            editable={editable} 
+            editable={editable}
           />
         );
 
@@ -245,7 +259,7 @@ const QuestionRenderer = ({
             correctAnswer={correctAnswer}
             showCorrectAnswer={showCorrectAnswer}
             answerStatus={answerStatus}
-            editable={editable} // ✅ ADDED
+            editable={editable}
           />
         );
 
@@ -259,11 +273,11 @@ const QuestionRenderer = ({
             correctAnswer={correctAnswer}
             showCorrectAnswer={showCorrectAnswer}
             answerStatus={answerStatus}
-            editable={editable} // ✅ ADDED
+            editable={editable}
           />
         );
 
-      case "essay":
+      case "essay": {
         // ✅ Safe essay answer preparation
         const essayAnswer = (() => {
           try {
@@ -284,8 +298,8 @@ const QuestionRenderer = ({
               showCorrectAnswer
                 ? ""
                 : typeof initialAnswer === "string"
-                ? initialAnswer
-                : ""
+                  ? initialAnswer
+                  : ""
             }
             frozenAnswer={
               showCorrectAnswer && typeof essayAnswer === "string"
@@ -297,6 +311,7 @@ const QuestionRenderer = ({
             editable={editable}
           />
         );
+      }
 
       case "reading":
         return (
@@ -332,23 +347,46 @@ const QuestionRenderer = ({
 
       default:
         console.warn(`⚠️ Unsupported question type: ${questionType}`);
-        return <p>Unsupported question type: {questionType}</p>;
+        return (
+          <Notice title="Unsupported question type">{questionType}</Notice>
+        );
     }
   } catch (error) {
     console.error("❌ Error rendering question:", error, question);
     return (
-      <div style={{ padding: 20, border: "1px solid red", borderRadius: 4 }}>
-        <h3 style={{ color: "red" }}>Error Rendering Question</h3>
-        <p>Question ID: {question?.id}</p>
-        <p>Type: {questionType}</p>
-        <p>Error: {error.message}</p>
-        <details>
-          <summary>Debug Info</summary>
-          <pre>
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </div>
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-medium text-slate-900">
+              Error rendering question
+            </h3>
+            <p className="text-xs text-red-600">{error.message}</p>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+          <dt className="font-medium uppercase tracking-wide text-slate-500">
+            Question ID
+          </dt>
+          <dd className="text-slate-600">{question?.id}</dd>
+          <dt className="font-medium uppercase tracking-wide text-slate-500">
+            Type
+          </dt>
+          <dd className="text-slate-600">{questionType}</dd>
+        </dl>
+
+        <details className="group">
+          <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-900">
+            Debug info
+          </summary>
+          <pre className="mt-2 max-h-64 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
             {JSON.stringify(
               { question, initialAnswer, showCorrectAnswer },
               null,
-              2
+              2,
             )}
           </pre>
         </details>

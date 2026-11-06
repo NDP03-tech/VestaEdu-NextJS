@@ -1,12 +1,18 @@
+
 FROM node:20-alpine
 
 WORKDIR /app
-ENV NODE_ENV=production
 
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
 
-COPY . .
+RUN npm ci --workspace=backend --include-workspace-root=false
+
+COPY backend ./backend
+
+WORKDIR /app/backend
 
 EXPOSE 5000
+
 CMD ["npm", "start"]

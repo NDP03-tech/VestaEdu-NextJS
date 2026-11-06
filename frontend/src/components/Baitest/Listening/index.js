@@ -1,436 +1,534 @@
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 import image from "./image.png";
-const Listening = ({ setBandScore }) => {
-  
-  const [answers, setAnswers] = useState({
-    1: '',
-    2: '',
-    3: '',
-    4: '',
-    5: '',
-    6: '',
-    7: '',
-    8: '',
-    9: '',
-    10: '',
-    11: '',
-    12: '',
-    13: '',
-    14: '',
-    15: '',
-    16: '',
-    17: '',
-    18: '',
-    19: '',
-    20: '',
-    21: '',
-    22: '',
-    23: '',
-    24: '',
-    25: '',
-    26: '',
-    27: '',
-    28: '',
-    29: '',
-    30: '',
-    31: '',
-    32: '',
-    33: '',
-    34: '',
-    35: '',
-    36: '',
-    37: '',
-    38: '',
-    39: '',
-    40: '',
-  });
 
-  const correctAnswers = {
-    1: 'Carousel',
-    2: ['clear tables','clear the tables'],
-    3: 'Waiting staff',
-    4: ["Millerby’s department","Millerby","Millerby's"],
-    5: ['bake cakes','bake the cakes'],
-    6: 'Food taster',
-    7: '15.30',
-    8: 'label',
-    9: ["extra pay","1-week's wages","one-week's wages"],
-    10: 'manage customer database',
-    11: 'H',
-    12: 'G',
-    13: 'C',
-    14: 'E',
-    15: 'D',
-    16: 'B',
-    17: 'C',
-    18: 'F',
-    19: 'B',
-    20: 'A',
-    21: ['D', 'E'],
-    22: ['D', 'E'],
-    23:['A good mood','good mood'],
-    24:['shared hate','hate'],
-    25:'B',
-    26:'D',
-    27:'A',
-    28:'B',
-    29:'C',
-    30:'D',
-    31:['E','C'],
-    32:['E','C'],
-    33:'goals',
-    34:'revised',
-    36:['key decision makers','decision makers','decision-makers','key decision-makers'],
-    35:'a planning team',
-    37:'individuals',
-    38:'past',
-    39:'predict',
-    40:'exciting',
-  };
-  const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái để kiểm tra đã gửi hay chưa
-  const calculateBandScore = (score) => {
-    if (score >= 39) return 9.0;
-    if (score >= 37) return 8.5;
-    if (score >= 35) return 8.0;
-    if (score >= 33) return 7.5;
-    if (score >= 30) return 7.0;
-    if (score >= 27) return 6.5;
-    if (score >= 23) return 6.0;
-    if (score >= 20) return 5.5;
-    if (score >= 16) return 5.0;
-    if (score >= 13) return 4.5;
-    if (score >= 10) return 4.0;
-    if (score >= 7) return 3.5;
-    if (score >= 5) return 3.0;
-    if (score >= 3) return 2.5;
-    return 0;
-  };
+/* ------------------------------------------------------------------ */
+/* Dữ liệu chấm điểm                                                   */
+/* ------------------------------------------------------------------ */
+
+const TOTAL_QUESTIONS = 40;
+
+// Đáp án một câu: chuỗi hoặc mảng các đáp án chấp nhận được (không phân biệt hoa/thường)
+const CORRECT_ANSWERS = {
+  1: "Carousel",
+  2: ["clear tables", "clear the tables"],
+  3: "Waiting staff",
+  4: ["Millerby’s department", "Millerby", "Millerby's"],
+  5: ["bake cakes", "bake the cakes"],
+  6: "Food taster",
+  7: "15.30",
+  8: "label",
+  9: ["extra pay", "1-week's wages", "one-week's wages"],
+  10: "manage customer database",
+  11: "H",
+  12: "G",
+  13: "C",
+  14: "E",
+  15: "D",
+  16: "B",
+  17: "C",
+  18: "F",
+  19: "B",
+  20: "A",
+  23: ["A good mood", "good mood"],
+  24: ["shared hate", "hate"],
+  25: "B",
+  26: "D",
+  27: "A",
+  28: "B",
+  29: "C",
+  30: "D",
+  33: "goals",
+  34: "revised",
+  35: "a planning team",
+  36: [
+    "key decision makers",
+    "decision makers",
+    "decision-makers",
+    "key decision-makers",
+  ],
+  37: "individuals",
+  38: "past",
+  39: "predict",
+  40: "exciting",
+};
+
+// Các cặp câu "chọn 2 đáp án", thứ tự không quan trọng
+const PAIR_QUESTIONS = [
+  { questions: [21, 22], correct: ["D", "E"] },
+  { questions: [31, 32], correct: ["C", "E"] },
+];
+
+const BAND_TABLE = [
+  [39, 9.0],
+  [37, 8.5],
+  [35, 8.0],
+  [33, 7.5],
+  [30, 7.0],
+  [27, 6.5],
+  [23, 6.0],
+  [20, 5.5],
+  [16, 5.0],
+  [13, 4.5],
+  [10, 4.0],
+  [7, 3.5],
+  [5, 3.0],
+  [3, 2.5],
+];
+
+const calculateBandScore = (score) =>
+  BAND_TABLE.find(([min]) => score >= min)?.[1] ?? 0;
+
+// Số đáp án đúng (không trùng nhau) trong cặp câu
+const scorePair = (first, second, correct) => {
+  const picked = new Set([first, second].map((v) => v?.toUpperCase()));
+  return correct.filter((letter) => picked.has(letter)).length;
+};
+
+const isSingleCorrect = (expected, given) => {
+  if (!expected) return false;
+  const answer = given?.toLowerCase();
+  return [].concat(expected).some((ans) => ans.toLowerCase() === answer);
+};
+
+/* ------------------------------------------------------------------ */
+/* Dữ liệu hiển thị                                                    */
+/* ------------------------------------------------------------------ */
+
+const MAP_OPTIONS = [
+  "A gift shop",
+  "B café",
+  "C visitor centre",
+  "D cave",
+  "E decorated walls",
+  "F information desk",
+  "G cloakroom",
+  "H volcanic rocks",
+  "I temporary exhibition room",
+];
+
+const AREA_QUESTIONS = [
+  { n: 17, label: "the north face" },
+  { n: 18, label: "the south side" },
+  { n: 19, label: "the central area" },
+  { n: 20, label: "the top floor" },
+];
+
+const PURPOSE_OPTIONS = [
+  "A to bring people together",
+  "B to celebrate independence",
+  "C to reflect nature",
+  "D to represent the native culture",
+  "E to provide views of the city",
+  "F to symbolize what more recent arrivals offer",
+];
+
+const FRIENDSHIP_OPTIONS = [
+  "A being a similar age",
+  "B accessing means of communication",
+  "C having common hobbies",
+  "D sharing a physical environment",
+  "E spending sufficient time together",
+];
+
+const MULTIPLE_CHOICE = [
+  {
+    n: 25,
+    text: "There are three stages of making friends. These stages depend on",
+    options: [
+      "A doing things together",
+      "B the age of the children",
+      "C wanting someone to play with",
+      "D getting to know each other",
+    ],
+  },
+  {
+    n: 26,
+    text: "Around the age of eight to ten kids begin to",
+    options: [
+      "A hang out late in the evening",
+      "B stay at their friend's house",
+      "C have a best friend",
+      "D trust each other",
+    ],
+  },
+  {
+    n: 27,
+    text: "The most important factor at stage 3 is",
+    options: [
+      "A loyalty",
+      "B getting into trouble at school.",
+      "C testing out different people",
+      "D jealousy",
+    ],
+  },
+  {
+    n: 28,
+    text: "David thinks that both he and Maria are",
+    options: [
+      "A super trendy",
+      "B a bit geeky",
+      "C similar in age",
+      "D awkward",
+    ],
+  },
+  {
+    n: 29,
+    text: "What does David think people change when they are friends?",
+    options: [
+      "A the way they look",
+      "B the things they do",
+      "C the way they behave",
+      "D talk about their behaviours",
+    ],
+  },
+  {
+    n: 30,
+    text: "According to Maria, what do people look for in a friend?",
+    options: [
+      "A the friend’s social status",
+      "B what they look like",
+      "C someone with a sense of humour",
+      "D possessing similar values",
+    ],
+  },
+];
+
+const PLANNER_OPTIONS = [
+  "A available time",
+  "B city residents",
+  "C function",
+  "D budget",
+  "E appearance",
+];
+
+/* ------------------------------------------------------------------ */
+/* Presentational helpers                                              */
+/* ------------------------------------------------------------------ */
+
+const TH = "border border-slate-300 bg-slate-50 p-3 text-left font-semibold";
+const TD = "border border-slate-300 p-3 align-top";
+
+const ExamTable = ({ children }) => (
+  <div className="mb-6 overflow-x-auto">
+    <table className="w-full border-collapse border border-slate-300 text-sm">
+      {children}
+    </table>
+  </div>
+);
+
+const SectionTitle = ({ children }) => (
+  <h3 className="mb-2 mt-10 text-lg font-bold text-slate-900">{children}</h3>
+);
+
+const Instruction = ({ children }) => (
+  <p className="mb-3 mt-6 text-sm font-medium italic text-slate-600">
+    {children}
+  </p>
+);
+
+const OptionList = ({ options }) => (
+  <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-700">
+    {options.map((option) => (
+      <li key={option}>{option}</li>
+    ))}
+  </ul>
+);
+
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
+
+const Listening = ({ setBandScore }) => {
+  const [answers, setAnswers] = useState(() =>
+    Object.fromEntries(
+      Array.from({ length: TOTAL_QUESTIONS }, (_, i) => [i + 1, ""]),
+    ),
+  );
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const setAnswer = (n, value) =>
+    setAnswers((prev) => ({ ...prev, [n]: value }));
 
   const checkAnswers = () => {
     let newScore = 0;
 
-    // Tính điểm cho các câu 21 và 22
-    const userAnswer21 = answers[21]?.toUpperCase();
-    const userAnswer22 = answers[22]?.toUpperCase();
-    // Kiểm tra điều kiện cho câu 21 và 22
-    if ((userAnswer21 === 'D' && userAnswer22 === 'E') || (userAnswer21 === 'E' && userAnswer22 === 'D')) {
-      newScore += 2;
-    } else if (userAnswer21 === userAnswer22 && (userAnswer21 === 'D' || userAnswer21 === 'E')) {
-      newScore += 1;
-    } else {
-      if (userAnswer21 === 'D') newScore++;
-      if (userAnswer21 === 'E') newScore++;
-      if (userAnswer22 === 'D') newScore++;
-      if (userAnswer22 === 'E') newScore++;
+    // Các cặp câu chọn 2 đáp án (21–22, 31–32)
+    PAIR_QUESTIONS.forEach(({ questions: [a, b], correct }) => {
+      newScore += scorePair(answers[a], answers[b], correct);
+    });
+
+    // Các câu còn lại
+    const pairNumbers = new Set(PAIR_QUESTIONS.flatMap((p) => p.questions));
+    for (let i = 1; i <= TOTAL_QUESTIONS; i++) {
+      if (pairNumbers.has(i)) continue;
+      if (isSingleCorrect(CORRECT_ANSWERS[i], answers[i])) newScore++;
     }
 
-    // Tính điểm cho các câu 31 và 32
-    const userAnswer31 = answers[31]?.toUpperCase();
-    const userAnswer32 = answers[32]?.toUpperCase();
-    if ((userAnswer31 === 'C' && userAnswer32 === 'E') || (userAnswer31 === 'E' && userAnswer32 === 'C')) {
-      newScore += 2;
-    } else if (userAnswer31 === userAnswer32 && (userAnswer31 === 'D' || userAnswer31 === 'E')) {
-      newScore += 1;
-    } else {
-      if (userAnswer31 === 'C') newScore++;
-      if (userAnswer31 === 'E') newScore++;
-      if (userAnswer32 === 'C') newScore++;
-      if (userAnswer32 === 'E') newScore++;
-    }
-
-    // Kiểm tra các câu hỏi từ 1 đến 20, từ 23 đến 30, và từ 33 đến 40
-    for (let i = 1; i <= 40; i++) {
-      if (i === 21 || i === 22 || i === 31 || i === 32) continue;
-
-      if (correctAnswers[i]) {
-        if (typeof correctAnswers[i] === 'string' && correctAnswers[i].toLowerCase() === answers[i]?.toLowerCase()) {
-          newScore++;
-        } else if (Array.isArray(correctAnswers[i]) && correctAnswers[i].some(ans => ans.toLowerCase() === answers[i]?.toLowerCase())) {
-          newScore++;
-        }
-      }
-    }
-
-    const bandScore = calculateBandScore(newScore); // Tính band điểm từ số câu đúng
-    setBandScore(bandScore); // Lưu band điểm
-    localStorage.setItem('listeningScore', newScore); // Lưu điểm vào localStorage
-    setIsSubmitted(true); // Đánh dấu là đã gửi
+    setBandScore(calculateBandScore(newScore)); // Lưu band điểm
+    localStorage.setItem("listeningScore", newScore); // Lưu điểm vào localStorage
+    setIsSubmitted(true);
   };
 
+  // Ô nhập đáp án kèm số câu
+  const blank = (n, width = "w-36") => (
+    <span className="inline-flex items-center gap-1.5 align-middle">
+      <span className="flex h-6 min-w-[24px] items-center justify-center rounded bg-slate-800 px-1.5 text-xs font-semibold text-white">
+        {n}
+      </span>
+      <input
+        type="text"
+        aria-label={`Answer ${n}`}
+        value={answers[n]}
+        onChange={(e) => setAnswer(n, e.target.value)}
+        className={`${width} rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+      />
+    </span>
+  );
+
+  const flowSteps = [
+    <>The vision is identified and {blank(33)} are selected.</>,
+    <>
+      Data is gathered and interpreted. The first draft of the plan is written
+      and then {blank(34)}.
+    </>,
+    <>Draft 2 is presented to {blank(35)}.</>,
+    <>Residents voice their opinions at a consultation meeting.</>,
+    <>
+      The final draft is written and presented to {blank(36)} at the city
+      council.
+    </>,
+  ];
+
   return (
-    <div className="App container mt-5">
-  
-      <p className="bg-warning text-center font-weight-bold" style={{ fontSize: '36px', textDecoration: 'underline' }}>
+    <div className="mx-auto mt-8 max-w-5xl px-4 pb-12 text-slate-800">
+      <h2 className="mb-6 rounded-lg bg-amber-100 px-4 py-4 text-center text-2xl font-bold text-amber-900 sm:text-3xl">
         A. LISTENING - 25-30 MINUTES
-      </p>
-  
-      <iframe 
-        src="https://drive.google.com/file/d/1aldhZwPVmcNq7a-uS5_FWYzOlmi_UWiS/preview" 
-        width="600" 
-        height="50" 
-        title="Listening Audio" 
-        className="w-100 mb-4"
+      </h2>
+
+      <iframe
+        src="https://drive.google.com/file/d/1aldhZwPVmcNq7a-uS5_FWYzOlmi_UWiS/preview"
+        width="600"
+        height="50"
+        title="Listening Audio"
+        className="mb-4 h-[50px] w-full"
       ></iframe>
-  
-      <p><strong>SECTION 1</strong></p>
-      <p><em>Questions 1-10: Complete the table below. Write NO MORE THAN TWO WORDS for each answer.</em></p>
-  
-      <table className="table table-bordered">
+
+      {/* ───────────── SECTION 1 ───────────── */}
+      <SectionTitle>SECTION 1</SectionTitle>
+      <Instruction>
+        Questions 1-10: Complete the table below. Write NO MORE THAN TWO WORDS
+        for each answer.
+      </Instruction>
+
+      <ExamTable>
         <thead>
           <tr>
-            <th>JOB</th>
-            <th>EMPLOYER</th>
-            <th>WORK DAYS</th>
-            <th>DUTIES</th>
+            <th className={TH}>JOB</th>
+            <th className={TH}>EMPLOYER</th>
+            <th className={TH}>WORK DAYS</th>
+            <th className={TH}>DUTIES</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Kitchen assistant</td>
-            <td>The (<strong>1</strong>) <input type="text" value={answers[1]} onChange={(e) => setAnswers({ ...answers, 1: e.target.value })} /> Cafe</td>
-            <td>Weekends</td>
-            <td>(<strong>2</strong>) <input type="text" value={answers[2]} onChange={(e) => setAnswers({ ...answers, 2: e.target.value })} />, Wash dishes</td>
+            <td className={TD}>Kitchen assistant</td>
+            <td className={TD}>The {blank(1)} Cafe</td>
+            <td className={TD}>Weekends</td>
+            <td className={TD}>{blank(2)}, Wash dishes</td>
           </tr>
           <tr>
-            <td>(<strong>3</strong>) <input type="text" value={answers[3]} onChange={(e) => setAnswers({ ...answers, 3: e.target.value })} /></td>
-            <td>Bellamy’s Restaurant</td>
-            <td>Thursday and Friday evening</td>
-            <td>Serve customers, wipe tables</td>
+            <td className={TD}>{blank(3)}</td>
+            <td className={TD}>Bellamy’s Restaurant</td>
+            <td className={TD}>Thursday and Friday evening</td>
+            <td className={TD}>Serve customers, wipe tables</td>
           </tr>
           <tr>
-            <td>Barista</td>
-            <td>(<strong>4</strong>) <input type="text" value={answers[4]} onChange={(e) => setAnswers({ ...answers, 4: e.target.value })} /> store</td>
-            <td>Saturday</td>
-            <td>Prepare drinks, (<strong>5</strong>) <input type="text" value={answers[5]} onChange={(e) => setAnswers({ ...answers, 5: e.target.value })} /></td>
+            <td className={TD}>Barista</td>
+            <td className={TD}>{blank(4)} store</td>
+            <td className={TD}>Saturday</td>
+            <td className={TD}>Prepare drinks, {blank(5)}</td>
           </tr>
         </tbody>
-      </table>
-  
-      <p>
-        <strong><em>Questions 6–10:</em></strong> 
-        <strong><em>Answer the questions below.</em></strong> 
-        <strong><em>Write NO MORE THAN THREE WORDS AND/OR NUMBERS for each answer.</em></strong>
-      </p>
-  
-      <table className="table table-bordered">
+      </ExamTable>
+
+      <Instruction>
+        Questions 6–10: Answer the questions below. Write NO MORE THAN THREE
+        WORDS AND/OR NUMBERS for each answer.
+      </Instruction>
+
+      <ExamTable>
         <thead>
           <tr>
-            <th>Position</th>
-            <th>Duties</th>
-            <th>Pay</th>
-            <th>Other benefits</th>
+            <th className={TH}>Position</th>
+            <th className={TH}>Duties</th>
+            <th className={TH}>Pay</th>
+            <th className={TH}>Other benefits</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>6</strong>. <input type="text" value={answers[6]} onChange={(e) => setAnswers({ ...answers, 6: e.target.value })} /></td>
-            <td>Check food quality</td>
-            <td><strong>7</strong>. £<input type="text" value={answers[7]} onChange={(e) => setAnswers({ ...answers, 7: e.target.value })} /> an hour</td>
-            <td>Recipe creation</td>
+            <td className={TD}>{blank(6)}</td>
+            <td className={TD}>Check food quality</td>
+            <td className={TD}>£{blank(7, "w-24")} an hour</td>
+            <td className={TD}>Recipe creation</td>
           </tr>
           <tr>
-            <td>Food packer</td>
-            <td>Pack and <strong>8</strong>. <input type="text" value={answers[8]} onChange={(e) => setAnswers({ ...answers, 8: e.target.value })} /> label boxes</td>
-            <td>£8.45 an hour</td>
-            <td><strong>9</strong>. <input type="text" value={answers[9]} onChange={(e) => setAnswers({ ...answers, 9: e.target.value })} /> at the end of summer</td>
+            <td className={TD}>Food packer</td>
+            <td className={TD}>Pack and {blank(8)} label boxes</td>
+            <td className={TD}>£8.45 an hour</td>
+            <td className={TD}>{blank(9)} at the end of summer</td>
           </tr>
           <tr>
-            <td>Office assistant</td>
-            <td>Type reports, <strong>10</strong>. <input type="text" value={answers[10]} onChange={(e) => setAnswers({ ...answers, 10: e.target.value })} />.</td>
-            <td>£12.50 an hour</td>
-            <td>receive health and safety training</td>
+            <td className={TD}>Office assistant</td>
+            <td className={TD}>Type reports, {blank(10, "w-56")}.</td>
+            <td className={TD}>£12.50 an hour</td>
+            <td className={TD}>receive health and safety training</td>
           </tr>
         </tbody>
-      </table>
-  
-      <p><strong>SECTION 2</strong></p>
-      <p><em>Questions 11-16: Label the map below. Write the correct letter A–I, next to the questions.</em></p>
-  
-      <table className="table table-bordered">
-        <tbody>
-          <tr>
-            <td valign="top" width="50%">
-              <p>A gift shop</p>
-              <p>B café</p>
-              <p>C visitor centre</p>
-              <p>D cave</p>
-              <p>E decorated walls</p>
-              <p>F information desk</p>
-              <p>G cloakroom</p>
-              <p>H volcanic rocks</p>
-              <p>I temporary exhibition room</p>
-              <p>
-                11. <input type="text" value={answers[11]} onChange={(e) => setAnswers({ ...answers, 11: e.target.value })} />
-                <br />
-                12. <input type="text" value={answers[12]} onChange={(e) => setAnswers({ ...answers, 12: e.target.value })} />
-                <br />
-                13. <input type="text" value={answers[13]} onChange={(e) => setAnswers({ ...answers, 13: e.target.value })} />
-                <br />
-                14. <input type="text" value={answers[14]} onChange={(e) => setAnswers({ ...answers, 14: e.target.value })} />
-                <br />
-                15. <input type="text" value={answers[15]} onChange={(e) => setAnswers({ ...answers, 15: e.target.value })} />
-                <br />
-                16. <input type="text" value={answers[16]} onChange={(e) => setAnswers({ ...answers, 16: e.target.value })} />
-              </p>
-            </td>
-            <td valign="top" width="50%">
-              <img src={image} alt="Map" className="img-fluid" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-  
-      <p><strong>Questions 17–20: How does the speaker describe the purpose of each of the following areas? Write the correct letter, A–F next to the questions.</strong></p>
-      <table className="table table-bordered">
-        <tbody>
-          <tr>
-            <td valign="top" width="50%">
-              <p>17. the north face <input type="text" value={answers[17]} onChange={(e) => setAnswers({ ...answers, 17: e.target.value })} /></p>
-              <p>18. the south side <input type="text" value={answers[18]} onChange={(e) => setAnswers({ ...answers, 18: e.target.value })} /></p>
-              <p>19. the central area <input type="text" value={answers[19]} onChange={(e) => setAnswers({ ...answers, 19: e.target.value })} /></p>
-              <p>20. the top floor <input type="text" value={answers[20]} onChange={(e) => setAnswers({ ...answers, 20: e.target.value })} /></p>
-            </td>
-            <td valign="top" width="50%">
-              <p>Purpose</p>
-              <p>A to bring people together</p>
-              <p>B to celebrate independence</p>
-              <p>C to reflect nature</p>
-              <p>D to represent the native culture</p>
-              <p>E to provide views of the city</p>
-              <p>F to symbolize what more recent arrivals offer</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-  
-      <p><strong>Questions 21–22: What TWO things does David say are necessary for early friendships to form?</strong></p>
-      <p>
-        ANSWER: <input type="text" value={answers[21]} onChange={(e) => setAnswers({ ...answers, 21: e.target.value })} /> and 
-        <input type="text" value={answers[22]} onChange={(e) => setAnswers({ ...answers, 22: e.target.value })} />
-      </p>
-      <p>A being a similar age</p>
-      <p>B accessing means of communication</p>
-      <p>C having common hobbies</p>
-      <p>D sharing a physical environment</p>
-      <p>E spending sufficient time together</p>
-  
-      <p><strong>Questions 23–30: Write NO MORE THAN THREE WORDS AND/OR NUMBERS for each answer.</strong></p>
-      <p>
-        23. What do people who easily become friends usually associate with their first meeting? 
-        <input type="text" value={answers[23]} onChange={(e) => setAnswers({ ...answers, 23: e.target.value })} />
-      </p>
-      <p>
-        24. What negative emotion can bring people together? 
-        <input type="text" value={answers[24]} onChange={(e) => setAnswers({ ...answers, 24: e.target.value })} />
-      </p>
-  
-      <p><strong>Questions 25–30: Choose the correct letter A–D.</strong></p>
-      <table className="table table-bordered">
-        <tbody>
-          <tr>
-            <td valign="top" width="50%">
-              <p>25. There are three stages of making friends. These stages depend on 
-                <input type="text" value={answers[25]} onChange={(e) => setAnswers({ ...answers, 25: e.target.value })} />
-              </p>
-              <p>A doing things together</p>
-              <p>B the age of the children</p>
-              <p>C wanting someone to play with</p>
-              <p>D getting to know each other</p>
-  
-              <p>27. The most important factor at stage 3 is 
-                <input type="text" value={answers[27]} onChange={(e) => setAnswers({ ...answers, 27: e.target.value })} />
-              </p>
-              <p>A loyalty</p>
-              <p>B getting into trouble at school.</p>
-              <p>C testing out different people</p>
-              <p>D jealousy</p>
-  
-              <p>29. What does David think people change when they are friends? 
-                <input type="text" value={answers[29]} onChange={(e) => setAnswers({ ...answers, 29: e.target.value })} />
-              </p>
-              <p>A the way they look</p>
-              <p>B the things they do</p>
-              <p>C the way they behave</p>
-              <p>D talk about their behaviours</p>
-            </td>
-            <td valign="top" width="50%">
-              <p>26. Around the age of eight to ten kids begin to 
-                <input type="text" value={answers[26]} onChange={(e) => setAnswers({ ...answers, 26: e.target.value })} />
-              </p>
-              <p>A hang out late in the evening</p>
-              <p>B stay at their friend's house</p>
-              <p>C have a best friend</p>
-              <p>D trust each other</p>
-  
-              <p>28. David thinks that both he and Maria are 
-                <input type="text" value={answers[28]} onChange={(e) => setAnswers({ ...answers, 28: e.target.value })} />
-              </p>
-              <p>A super trendy</p>
-              <p>B a bit geeky</p>
-              <p>C similar in age</p>
-              <p>D awkward</p>
-  
-              <p>30. According to Maria, what do people look for in a friend? 
-                <input type="text" value={answers[30]} onChange={(e) => setAnswers({ ...answers, 30: e.target.value })} />
-              </p>
-              <p>A the friend’s social status</p>
-              <p>B what they look like</p>
-              <p>C someone with a sense of humour</p>
-              <p>D possessing similar values</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-  
-      <p><strong>Questions 31–32: What are the TWO main concerns of an urban planner?</strong></p>
-      <p>
-        ANSWER: <input type="text" value={answers[31]} onChange={(e) => setAnswers({ ...answers, 31: e.target.value })} /> and 
-        <input type="text" value={answers[32]} onChange={(e) => setAnswers({ ...answers, 32: e.target.value })} />
-      </p>
-      <p>A available time</p>
-      <p>B city residents</p>
-      <p>C function</p>
-      <p>D budget</p>
-      <p>E appearance</p>
-  
-      <p><strong>Questions 33–36: Complete the flow chart with NO MORE THAN THREE WORDS for each answer</strong></p>
-      <div className="flow-chart">
-        <p>The vision is identified and 33.<input type="text" value={answers[33]} onChange={(e) => setAnswers({ ...answers, 33: e.target.value })} /> are selected.</p>
-        <div className="arrow">↓</div>
-        <p>Data is gathered and interpreted. The first draft of the plan is written and then 34. <input type="text" value={answers[34]} onChange={(e) => setAnswers({ ...answers, 34: e.target.value })} />.</p>
-        <div className="arrow">↓</div>
-        <p>Draft 2 is presented to 35.<input type="text" value={answers[35]} onChange={(e) => setAnswers({ ...answers, 35: e.target.value })} />.</p>
-        <div className="arrow">↓</div>
-        <p>Residents voice their opinions at a consultation meeting.</p>
-        <div className="arrow">↓</div>
-        <p>The final draft is written and presented to 36. <input type="text" value={answers[36]} onChange={(e) => setAnswers({ ...answers, 36: e.target.value })} /> at the city council.</p>
+      </ExamTable>
+
+      {/* ───────────── SECTION 2 ───────────── */}
+      <SectionTitle>SECTION 2</SectionTitle>
+      <Instruction>
+        Questions 11-16: Label the map below. Write the correct letter A–I, next
+        to the questions.
+      </Instruction>
+
+      <div className="mb-6 grid gap-6 rounded-lg border border-slate-300 p-4 md:grid-cols-2">
+        <div>
+          <OptionList options={MAP_OPTIONS} />
+          <div className="mt-4 space-y-2">
+            {[11, 12, 13, 14, 15, 16].map((n) => (
+              <div key={n}>{blank(n, "w-16")}</div>
+            ))}
+          </div>
+        </div>
+        <img src={image} alt="Map" className="h-auto max-w-full" />
       </div>
-  
-      <p><strong>Questions 37–40: Complete the summary below. Write NO MORE THAN ONE WORD for each answer.</strong></p>
-      <p>Urban planning can be difficult for three key reasons.</p>
-      <p>The first is that much of a town or city belongs to 37. <input type="text" value={answers[37]} onChange={(e) => setAnswers({ ...answers, 37: e.target.value })} /> and not local government, taking control out of their hands.</p>
-      <p>The second issue is the impact of 38.<input type="text" value={answers[38]} onChange={(e) => setAnswers({ ...answers, 38: e.target.value })} /> planning decisions, such as roads which are too narrow for today's cars.</p>
-      <p>Finally, a planner has to 39.<input type="text" value={answers[39]} onChange={(e) => setAnswers({ ...answers, 39: e.target.value })} /> the needs of a future population.</p>
-      <p>So, although being a planner can be 40.<input type="text" value={answers[40]} onChange={(e) => setAnswers({ ...answers, 40: e.target.value })} />, it is also very challenging.</p>
-      
-      <button 
-    onClick={checkAnswers} 
-    disabled={isSubmitted} // Vô hiệu hóa nút nếu đã gửi
-    style={{ 
-      padding: '10px 20px',
-      backgroundColor: isSubmitted ? '#ccc' : '#007bff',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: isSubmitted ? 'not-allowed' : 'pointer'
-    }}
-  >
-    Submit
-  </button>
+
+      <Instruction>
+        Questions 17–20: How does the speaker describe the purpose of each of
+        the following areas? Write the correct letter, A–F next to the
+        questions.
+      </Instruction>
+
+      <div className="mb-6 grid gap-6 rounded-lg border border-slate-300 p-4 md:grid-cols-2">
+        <div className="space-y-3">
+          {AREA_QUESTIONS.map(({ n, label }) => (
+            <div key={n} className="flex items-center gap-3 text-sm">
+              {blank(n, "w-16")}
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div>
+          <p className="m-0 mb-2 text-sm font-semibold">Purpose</p>
+          <OptionList options={PURPOSE_OPTIONS} />
+        </div>
+      </div>
+
+      <Instruction>
+        Questions 21–22: What TWO things does David say are necessary for early
+        friendships to form?
+      </Instruction>
+      <p className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+        ANSWER: {blank(21, "w-16")} and {blank(22, "w-16")}
+      </p>
+      <OptionList options={FRIENDSHIP_OPTIONS} />
+
+      <Instruction>
+        Questions 23–30: Write NO MORE THAN THREE WORDS AND/OR NUMBERS for each
+        answer.
+      </Instruction>
+      <div className="space-y-3 text-sm">
+        <p className="m-0">
+          What do people who easily become friends usually associate with their
+          first meeting? {blank(23, "w-48")}
+        </p>
+        <p className="m-0">
+          What negative emotion can bring people together? {blank(24, "w-48")}
+        </p>
+      </div>
+
+      <Instruction>Questions 25–30: Choose the correct letter A–D.</Instruction>
+      <div className="grid gap-4 md:grid-cols-2">
+        {MULTIPLE_CHOICE.map(({ n, text, options }) => (
+          <div
+            key={n}
+            className="rounded-lg border border-slate-200 bg-slate-50/60 p-4"
+          >
+            <p className="m-0 mb-2 text-sm">
+              {text} {blank(n, "w-16")}
+            </p>
+            <OptionList options={options} />
+          </div>
+        ))}
+      </div>
+
+      <Instruction>
+        Questions 31–32: What are the TWO main concerns of an urban planner?
+      </Instruction>
+      <p className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+        ANSWER: {blank(31, "w-16")} and {blank(32, "w-16")}
+      </p>
+      <OptionList options={PLANNER_OPTIONS} />
+
+      <Instruction>
+        Questions 33–36: Complete the flow chart with NO MORE THAN THREE WORDS
+        for each answer
+      </Instruction>
+      <div className="flex flex-col items-center gap-2">
+        {flowSteps.map((step, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && (
+              <span aria-hidden="true" className="text-xl text-slate-400">
+                ↓
+              </span>
+            )}
+            <div className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm leading-loose shadow-sm">
+              {step}
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      <Instruction>
+        Questions 37–40: Complete the summary below. Write NO MORE THAN ONE WORD
+        for each answer.
+      </Instruction>
+      <div className="space-y-3 text-sm leading-loose">
+        <p className="m-0">
+          Urban planning can be difficult for three key reasons.
+        </p>
+        <p className="m-0">
+          The first is that much of a town or city belongs to {blank(37)} and
+          not local government, taking control out of their hands.
+        </p>
+        <p className="m-0">
+          The second issue is the impact of {blank(38)} planning decisions, such
+          as roads which are too narrow for today's cars.
+        </p>
+        <p className="m-0">
+          Finally, a planner has to {blank(39)} the needs of a future
+          population.
+        </p>
+        <p className="m-0">
+          So, although being a planner can be {blank(40)}, it is also very
+          challenging.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={checkAnswers}
+        disabled={isSubmitted}
+        className="mt-8 cursor-pointer rounded-md bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+      >
+        Submit
+      </button>
     </div>
   );
-}
+};
 
 export default Listening;
