@@ -24,7 +24,7 @@ const QuizPreviewWrapper = () => {
   const autosaver = useRef(null);
   if (!autosaver.current) {
     autosaver.current = createAttemptAutosave({
-      save: async ({ resultId, answers: answerList }) => {
+      save: async ({ resultId, answers: answerList, state }) => {
         const response = await fetch(
           `${config.API_URL}/api/results/temp/${resultId}`,
           {
@@ -33,7 +33,7 @@ const QuizPreviewWrapper = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-            body: JSON.stringify({ answers: answerList }),
+            body: JSON.stringify({ answers: answerList, state }),
           },
         );
         if (!response.ok) {
@@ -169,7 +169,7 @@ const QuizPreviewWrapper = () => {
   // -------------------------
   // Handle answer change (local + temp-save)
   // -------------------------
-  const handleAnswerChange = (questionId, userAnswer) => {
+  const handleAnswerChange = (questionId, userAnswer, attemptState) => {
     const newAnswers = { ...answers, [questionId]: userAnswer };
     setAnswers(newAnswers);
     console.log("📝 [FE] Answer changed:", {
@@ -191,7 +191,35 @@ const QuizPreviewWrapper = () => {
           "unknown",
       }));
 
-    autosaver.current.schedule({ resultId: result.id, answers: answersArray });
+    autosaver.current.schedule({
+      resultId: result.id,
+      answers: answersArray,
+      state: attemptState,
+    });
+  };
+
+  const handleAttemptStateChange = (state) => {
+    if (!result?.id || result?.submittedAt) return;
+
+    const validQuestionIds = questions.map((question) => question.id);
+    const answersArray = Object.entries(answers)
+      .filter(([questionId]) =>
+        validQuestionIds.includes(parseInt(questionId, 10)),
+      )
+      .map(([questionId, answer]) => ({
+        questionId: parseInt(questionId, 10),
+        answer,
+        type:
+          questions.find(
+            (question) => question.id === parseInt(questionId, 10),
+          )?.question_type || "unknown",
+      }));
+
+    autosaver.current.schedule({
+      resultId: result.id,
+      answers: answersArray,
+      state,
+    });
   };
 
   // -------------------------
@@ -448,6 +476,8 @@ const QuizPreviewWrapper = () => {
         hasSubmitted={hasSubmitted}
         showCorrectAnswer={quiz.visibleTo === "everyone_record" || hasSubmitted}
         initialAnswers={answers}
+        initialState={result?.state}
+        onAttemptStateChange={handleAttemptStateChange}
         uiSettings={ui}
         resultId={result?.id ?? quizId}
         scoreAfterSubmit={scoreAfterSubmit}

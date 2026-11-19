@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import QuestionRenderer from "../QuestionRenderer";
 import { Button } from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { prepareShuffledQuestions } from "./quizShuffle";
+
+const EMPTY_ATTEMPT_STATE = Object.freeze({});
 
 const QuizRunner = ({
   questions = [],
@@ -17,10 +19,14 @@ const QuizRunner = ({
   hasSubmitted,
   scoreAfterSubmit,
   initialAnswers = {},
+  initialState = EMPTY_ATTEMPT_STATE,
+  onAttemptStateChange,
   uiSettings = {},
   resultId = "",
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [flaggedQuestionIds, setFlaggedQuestionIds] = useState([]);
+  const elapsedRef = useRef(0);
   const [secondsLeft, setSecondsLeft] = useState(
     timeLimit ? timeLimit * 60 : 0
   );
@@ -32,10 +38,33 @@ const QuizRunner = ({
   );
 
   useEffect(() => {
-    setCurrentIndex(0);
-    setSecondsLeft(timeLimit ? timeLimit * 60 : 0);
+    const savedState =
+      initialState && typeof initialState === "object"
+        ? initialState
+        : EMPTY_ATTEMPT_STATE;
+    const restoredElapsed = Number(savedState.elapsed);
+    const elapsed = Number.isFinite(restoredElapsed)
+      ? Math.max(0, Math.floor(restoredElapsed))
+      : 0;
+    const restoredIndex = displayedQuestions.findIndex(
+      (question) =>
+        String(question.id) === String(savedState.currentQuestion),
+    );
+    const questionIds = new Set(
+      questions.map((question) => String(question.id)),
+    );
+    const restoredFlags = Array.isArray(savedState.flagged)
+      ? [...new Set(
+          savedState.flagged.filter((id) => questionIds.has(String(id))),
+        )]
+      : [];
+
+    setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
+    setFlaggedQuestionIds(restoredFlags);
+    elapsedRef.current = elapsed;
+    setSecondsLeft(timeLimit ? Math.max(timeLimit * 60 - elapsed, 0) : 0);
     setFrozenAnswers(null);
-  }, [questions, timeLimit, uiSettings.shuffle, resultId]);
+  }, [displayedQuestions, initialState, questions, timeLimit, resultId]);
 
   useEffect(() => {
     if (!timeLimit) return;
@@ -53,6 +82,31 @@ const QuizRunner = ({
 
     return () => clearInterval(interval);
   }, [timeLimit, onSubmit]);
+
+  useEffect(() => {
+    if (hasSubmitted) return undefined;
+
+    const interval = setInterval(() => {
+      const elapsed = elapsedRef.current + 1;
+      elapsedRef.current = elapsed;
+
+      if (elapsed % 30 === 0) {
+        onAttemptStateChange?.({
+          currentQuestion: displayedQuestions[currentIndex]?.id ?? null,
+          flagged: flaggedQuestionIds,
+          elapsed,
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [
+    currentIndex,
+    displayedQuestions,
+    flaggedQuestionIds,
+    hasSubmitted,
+    onAttemptStateChange,
+  ]);
 
   const normalizedAnswers = useMemo(() => {
     if (Array.isArray(initialAnswers)) {
@@ -78,6 +132,49 @@ const QuizRunner = ({
   };
 
   const isLowTime = timeLimit && secondsLeft <= 60;
+
+  const getAttemptState = (
+    questionIndex = currentIndex,
+    flagged = flaggedQuestionIds,
+  ) => ({
+    currentQuestion: displayedQuestions[questionIndex]?.id ?? null,
+    flagged,
+    elapsed: elapsedRef.current,
+  });
+
+  const changeCurrentIndex = (index) => {
+    setCurrentIndex(index);
+    onAttemptStateChange?.(getAttemptState(index));
+  };
+
+  const toggleFlaggedQuestion = (questionId) => {
+    const nextFlags = flaggedQuestionIds.some(
+      (id) => String(id) === String(questionId),
+    )
+      ? flaggedQuestionIds.filter((id) => String(id) !== String(questionId))
+      : [...flaggedQuestionIds, questionId];
+    setFlaggedQuestionIds(nextFlags);
+    onAttemptStateChange?.(getAttemptState(currentIndex, nextFlags));
+  };
+
+  const renderFlagButton = (questionId) => {
+    if (hasSubmitted || questionId == null) return null;
+
+    const isFlagged = flaggedQuestionIds.some(
+      (id) => String(id) === String(questionId),
+    );
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label={isFlagged ? "Unmark question for review" : "Mark question for review"}
+        aria-pressed={isFlagged}
+        onClick={() => toggleFlaggedQuestion(questionId)}
+      >
+        {isFlagged ? "Marked for review" : "Mark for review"}
+      </Button>
+    );
+  };
 
   const buildPrefilledAnswers = (question) => {
     const result = {};
@@ -213,6 +310,12 @@ const QuizRunner = ({
                   <Badge variant="primary" size="md">
                     Câu hỏi {currentIndex + 1} / {displayedQuestions.length}
                   </Badge>
+                  {renderFlagButton(displayedQuestions[currentIndex]?.id)}
+                </CardHeader>
+              )}
+              {!showQuestionNumbers && (
+                <CardHeader className="flex justify-end border-b border-slate-100">
+                  {renderFlagButton(displayedQuestions[currentIndex]?.id)}
                 </CardHeader>
               )}
               <CardBody className="p-6 sm:p-8">
@@ -229,7 +332,7 @@ const QuizRunner = ({
                     displayedQuestions[currentIndex]
                   )}
                   onAnswerChange={(questionId, answer) =>
-                    onAnswerChange(questionId, answer)
+                    onAnswerChange(questionId, answer, getAttemptState())
                   }
                   editable={questions?.visibleTo !== "everyone_record"}
                 />
@@ -241,7 +344,7 @@ const QuizRunner = ({
               <Button
                 variant="outline"
                 disabled={currentIndex === 0}
-                onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                onClick={() => changeCurrentIndex(Math.max(0, currentIndex - 1))}
                 className="gap-2 px-5 rounded-xl"
               >
                 ← Câu trước
@@ -251,8 +354,8 @@ const QuizRunner = ({
                 <Button
                   variant="primary"
                   onClick={() =>
-                    setCurrentIndex((prev) =>
-                      Math.min(displayedQuestions.length - 1, prev + 1)
+                    changeCurrentIndex(
+                      Math.min(displayedQuestions.length - 1, currentIndex + 1),
                     )
                   }
                   className="gap-2 px-6 rounded-xl shadow-md shadow-blue-500/20"
@@ -279,10 +382,16 @@ const QuizRunner = ({
                 className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white"
               >
                 {showQuestionNumbers && (
-                  <CardHeader className="bg-slate-50/50 py-3.5 px-6 border-b border-slate-100">
+                  <CardHeader className="bg-slate-50/50 py-3.5 px-6 flex items-center justify-between border-b border-slate-100">
                     <Badge variant="primary" size="md">
                       Câu hỏi {index + 1}
                     </Badge>
+                    {renderFlagButton(q.id)}
+                  </CardHeader>
+                )}
+                {!showQuestionNumbers && (
+                  <CardHeader className="flex justify-end border-b border-slate-100">
+                    {renderFlagButton(q.id)}
                   </CardHeader>
                 )}
                 <CardBody className="p-6 sm:p-8">
@@ -294,7 +403,7 @@ const QuizRunner = ({
                     correctAnswers={correctAnswers}
                     initialAnswer={getInitialAnswerForQuestion(q)}
                     onAnswerChange={(questionId, answer) =>
-                      onAnswerChange(questionId, answer)
+                      onAnswerChange(questionId, answer, getAttemptState(index))
                     }
                   />
                 </CardBody>

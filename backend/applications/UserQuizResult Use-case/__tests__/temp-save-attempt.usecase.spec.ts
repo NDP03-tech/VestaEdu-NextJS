@@ -17,11 +17,18 @@ describe("TempSaveAttemptUseCase", () => {
       getQuestions: jest.fn(),
     };
     const useCase = new TempSaveAttemptUseCase(repository as never, queries);
+    const state = {
+      currentQuestion: 10,
+      flagged: [10],
+      elapsed: 45,
+    };
 
-    await expect(useCase.execute("17", 3, [])).resolves.toMatchObject({
+    await expect(useCase.execute("17", 3, [], state)).resolves.toMatchObject({
       quizId: 8,
       answers: [],
+      state,
     });
+    expect(result.state).toEqual(state);
     expect(repository.update).toHaveBeenCalledWith("17", result);
   });
 

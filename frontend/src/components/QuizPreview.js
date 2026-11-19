@@ -21,7 +21,7 @@ const QuizPreviewWrapper = () => {
   const autosaver = useRef(null);
   if (!autosaver.current) {
     autosaver.current = createAttemptAutosave({
-      save: async ({ resultId, answers }) => {
+      save: async ({ resultId, answers, state }) => {
         const response = await fetch(
           `${config.API_URL}/api/results/temp/${resultId}`,
           {
@@ -30,7 +30,7 @@ const QuizPreviewWrapper = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-            body: JSON.stringify({ answers }),
+            body: JSON.stringify({ answers, state }),
           },
         );
         if (!response.ok) {
@@ -119,7 +119,7 @@ const QuizPreviewWrapper = () => {
     }
   };
 
-  const handleAnswerChange = (questionId, userAnswer) => {
+  const handleAnswerChange = (questionId, userAnswer, attemptState) => {
     const newAnswers = { ...answers, [questionId]: userAnswer };
     setAnswers(newAnswers);
 
@@ -136,8 +136,32 @@ const QuizPreviewWrapper = () => {
       autosaver.current.schedule({
         resultId: result.id,
         answers: answersArray,
+        state: attemptState,
       });
     }
+  };
+
+  const handleAttemptStateChange = (state) => {
+    if (!result?.id || result?.submittedAt) return;
+
+    const validQuestionIds = questions.map((question) => question.id);
+    const answersArray = Object.entries(answers)
+      .filter(([questionId]) =>
+        validQuestionIds.includes(Number(questionId)),
+      )
+      .map(([questionId, answer]) => ({
+        questionId: Number(questionId),
+        answer,
+        type:
+          questions.find((question) => question.id === Number(questionId))
+            ?.question_type || "unknown",
+      }));
+
+    autosaver.current.schedule({
+      resultId: result.id,
+      answers: answersArray,
+      state,
+    });
   };
 
   const handleSubmit = async () => {
@@ -250,6 +274,8 @@ const QuizPreviewWrapper = () => {
         onSubmit={handleSubmit}
         timeLimit={ui.timeLimit || 0}
         initialAnswers={answers}
+        initialState={result?.state}
+        onAttemptStateChange={handleAttemptStateChange}
         uiSettings={ui}
         resultId={result?.id ?? quizId}
       />
