@@ -83,19 +83,19 @@ export class Quiz {
 
   // Quiz.hasMany(Question, { foreignKey: 'quiz_id', as: 'questions' })
   @OneToMany(() => Question, (q) => q.quiz)
-  questions: Question[] = [];
+  questions!: Question[];
 
   // Quiz.hasMany(UserQuizResult, { foreignKey: 'quiz_id', as: 'results' })
   @OneToMany(() => UserQuizResult, (r) => r.quiz)
-  results: UserQuizResult[] = [];
+  results!: UserQuizResult[];
 
   // Quiz.hasMany(AttemptCounter, { foreignKey: 'quiz_id', as: 'attemptCounters' })
   @OneToMany(() => AttemptCounter, (c) => c.quiz)
-  attemptCounters: AttemptCounter[] = [];
+  attemptCounters!: AttemptCounter[];
 
   // thay cho Quiz.belongsToMany(Class, { through: 'class_quizzes', as: 'classes' })
   @OneToMany(() => ClassQuiz, (cq) => cq.quiz)
-  classQuizzes: ClassQuiz[] = [];
+  classQuizzes!: ClassQuiz[];
 
   @CreateDateColumn({ name: "createdAt" })
   createdAt!: Date;

@@ -55,10 +55,10 @@
     "zod": "^4.6.7"
   },
   "scripts": {
-    "start": "npm run build && node index.js",
+    "start": "npm run build && npm run migrate && node index.js",
     "worker": "node queues/worker.js",
     "test": "jest",
-    "dev": "npm run build && node index.js",
+    "dev": "npm run build && npm run migrate && node index.js",
     "migrate": "sequelize-cli db:migrate",
     "typecheck": "tsc --noEmit",
     "build": "tsc",

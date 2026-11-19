@@ -57,27 +57,27 @@ export class User {
 
   // User.hasMany(Class, { foreignKey: 'teacher_id', as: 'taughtClasses' })
   @OneToMany(() => Class, (cls) => cls.teacher)
-  taughtClasses: Class[] = [];
+  taughtClasses!: Class[];
 
   // thay cho User.belongsToMany(Class, { through: 'class_students', as: 'classes' })
   @OneToMany(() => ClassStudent, (cs) => cs.user)
-  classStudents: ClassStudent[] = [];
+  classStudents!: ClassStudent[];
 
   // User.hasMany(UserQuizResult, { foreignKey: 'user_id', as: 'quizResults' })
   @OneToMany(() => UserQuizResult, (result) => result.user)
-  quizResults: UserQuizResult[] = [];
+  quizResults!: UserQuizResult[];
 
   // User.hasMany(AttemptCounter, { foreignKey: 'user_id', as: 'attemptCounters' })
   @OneToMany(() => AttemptCounter, (counter) => counter.user)
-  attemptCounters: AttemptCounter[] = [];
+  attemptCounters!: AttemptCounter[];
 
   // User.hasMany(RefreshToken, { foreignKey: 'userId', as: 'refreshTokens' })
   @OneToMany(() => RefreshToken, (token) => token.user)
-  refreshTokens: RefreshToken[] = [];
+  refreshTokens!: RefreshToken[];
 
   // User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' })
   @OneToMany(() => AuditLog, (log) => log.user)
-  auditLogs: AuditLog[] = [];
+  auditLogs!: AuditLog[];
 
   @CreateDateColumn({ name: "createdAt" })
   createdAt!: Date;

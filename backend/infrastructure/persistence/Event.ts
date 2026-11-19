@@ -48,7 +48,7 @@ export class Event {
 
   // Event.hasMany(EventRegistration, { foreignKey: 'eventId', as: 'registrations' })
   @OneToMany(() => EventRegistration, (reg) => reg.event)
-  registrations: EventRegistration[] = [];
+  registrations!: EventRegistration[];
 
   @CreateDateColumn({ name: "createdAt" })
   createdAt!: Date;

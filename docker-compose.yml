@@ -41,6 +41,9 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the environment or .env file}
       DB_POOL_MAX: ${DB_POOL_MAX:-20}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in the environment or .env file}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in the environment or .env file}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?Set ACCESS_TOKEN_SECRET in the environment or .env file}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     depends_on:

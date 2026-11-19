@@ -33,11 +33,11 @@ export class Class {
 
   // thay cho Class.belongsToMany(User, { through: 'class_students', as: 'students' })
   @OneToMany(() => ClassStudent, (cs) => cs.class)
-  classStudents: ClassStudent[] = [];
+  classStudents!: ClassStudent[];
 
   // thay cho Class.belongsToMany(Quiz, { through: 'class_quizzes', as: 'quizzes' })
   @OneToMany(() => ClassQuiz, (cq) => cq.class)
-  classQuizzes: ClassQuiz[] = [];
+  classQuizzes!: ClassQuiz[];
 
   @CreateDateColumn({ name: "createdAt" })
   createdAt!: Date;
