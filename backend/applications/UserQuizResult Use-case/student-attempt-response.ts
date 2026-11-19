@@ -19,6 +19,7 @@ export type StudentAttemptResponse = Omit<AttemptJson, "userId" | "answers"> & {
     isCorrect: boolean | null;
     score: number;
     requiresManualGrading: boolean;
+    graderFeedback?: string | null;
     questionText: string | null;
     explanation: string | null;
     breakdown: ReturnType<QuestionEntity["grade"]>["breakdown"];
@@ -62,6 +63,7 @@ export function toStudentAttemptResponse(
         isCorrect: answer.isCorrect,
         score: answer.score,
         requiresManualGrading: answer.requiresManualGrading,
+        graderFeedback: answer.graderFeedback ?? null,
         questionText: question?.questionText ?? null,
         explanation: question?.explanation ?? null,
         breakdown: grade?.requiresManualGrading ? [] : (grade?.breakdown ?? []),

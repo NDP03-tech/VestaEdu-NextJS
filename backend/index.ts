@@ -42,6 +42,7 @@ import {
   RegisterSchema,
   AttemptDraftSchema,
   AttemptSubmitSchema,
+  AttemptGradeSchema,
 } from "./infrastructure/presentation/validation/schemas";
 const authenticateToken: express.RequestHandler = require(
   path.join(__dirname, "..", "middleware", "authenticateToken"),
@@ -462,6 +463,12 @@ async function start(): Promise<void> {
     "/api/results/submit/:resultId",
     validateRequest({ body: AttemptSubmitSchema }),
     workflows.resultController.submitAttempt as never,
+  );
+  app.put(
+    "/api/results/:resultId/grade",
+    authorizeRoles("admin", "teacher"),
+    validateRequest({ body: AttemptGradeSchema }),
+    workflows.resultController.gradeAttempt as never,
   );
   app.get(
     "/api/results/latest/:quizId",

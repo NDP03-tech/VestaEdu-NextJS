@@ -18,7 +18,8 @@ export class UserQuizResultMapper {
       score: orm.score,
       passed: orm.passed,
       needsManualGrading: answers.some(
-        (answer) => answer.requiresManualGrading === true,
+        (answer) =>
+          answer.requiresManualGrading === true && answer.isCorrect === null,
       ),
       startedAt: orm.startedAt,
       submittedAt: orm.submittedAt,

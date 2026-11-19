@@ -12,6 +12,7 @@ export interface QuizAnswer {
   isCorrect: boolean | null; // null = cần chấm tay (essay/description/speaking)
   score: number;
   requiresManualGrading: boolean;
+  graderFeedback?: string | null;
 }
 
 export interface RawAnswerInput {
@@ -159,6 +160,7 @@ export class UserQuizResultEntity {
       isCorrect: null,
       score: 0,
       requiresManualGrading: false,
+      graderFeedback: null,
     }));
     if (state !== undefined) this.props.state = { ...state };
     this.touch();
@@ -197,6 +199,7 @@ export class UserQuizResultEntity {
           isCorrect: false,
           score: 0,
           requiresManualGrading: false,
+          graderFeedback: null,
         };
       }
 
@@ -215,6 +218,7 @@ export class UserQuizResultEntity {
         isCorrect: result.isCorrect,
         score: result.score,
         requiresManualGrading: result.requiresManualGrading,
+        graderFeedback: null,
       };
     });
 
@@ -238,33 +242,46 @@ export class UserQuizResultEntity {
     maxScore: number,
     passingScore: number,
     questions: QuestionEntity[],
+    feedback?: string,
   ): void {
+    if (!this.isSubmitted()) {
+      throw new Error("Cannot grade an attempt before it is submitted");
+    }
     const answer = this.props.answers.find((a) => a.questionId === questionId);
     if (!answer) throw new Error(`Answer for question ${questionId} not found`);
     if (!answer.requiresManualGrading) {
       throw new Error("This question does not require manual grading");
     }
 
-    answer.score = Math.max(0, Number(score) || 0);
+    if (
+      !Number.isFinite(score) ||
+      !Number.isFinite(maxScore) ||
+      maxScore < 0 ||
+      score < 0 ||
+      score > maxScore
+    ) {
+      throw new Error("Manual grade must be between zero and the maximum score");
+    }
+    answer.score = score;
     answer.isCorrect = answer.score >= maxScore;
+    if (feedback !== undefined) answer.graderFeedback = feedback.trim() || null;
 
-    // Tính lại tổng điểm + trạng thái pass từ toàn bộ answers + questions.
-    // Tương tự logic submit() - dùng toàn bộ câu hỏi thay vì hard-code.
     let earned = 0;
     let possible = 0;
     for (const q of questions) {
       const a = this.props.answers.find((x) => x.questionId === q.id);
       if (!a) continue;
-      if (a.requiresManualGrading) continue; // câu chấm tay, dùng điểm đã cập nhật
+      if (a.requiresManualGrading) {
+        possible += q.points;
+        if (a.isCorrect !== null) earned += a.score;
+        continue;
+      }
       const res = q.grade(a.answer);
       if (!res.requiresManualGrading) {
         earned += res.score;
         possible += res.maxScore;
       }
     }
-    // Cộng điểm câu vừa chấm tay vào earned/possible
-    earned += answer.score;
-    possible += maxScore;
 
     const finalScore =
       possible === 0 ? 0 : Math.round((earned / possible) * 100);

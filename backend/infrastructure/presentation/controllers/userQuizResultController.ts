@@ -15,6 +15,8 @@ export class UserQuizResultController extends WorkflowController {
     this.handle("tempSave", req, res, next);
   submitAttempt = (req: HttpRequest, res: HttpResponse, next: NextFunction) =>
     this.handle("submitAttempt", req, res, next);
+  gradeAttempt = (req: HttpRequest, res: HttpResponse, next: NextFunction) =>
+    this.handle("gradeAttempt", req, res, next);
   getLatestResult = (req: HttpRequest, res: HttpResponse, next: NextFunction) =>
     this.handle("getLatestResult", req, res, next);
   getAllAttempts = (req: HttpRequest, res: HttpResponse, next: NextFunction) =>

@@ -14,6 +14,24 @@ export class AttemptOwnershipError extends Error {
   }
 }
 
+export class AttemptNotSubmittedError extends Error {
+  readonly statusCode = 409;
+
+  constructor() {
+    super("An attempt can only be graded after submission");
+    this.name = "AttemptNotSubmittedError";
+  }
+}
+
+export class ManualGradeValidationError extends Error {
+  readonly statusCode = 400;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ManualGradeValidationError";
+  }
+}
+
 export class AlreadyPassedError extends Error {
   readonly statusCode = 409;
   readonly code = "ALREADY_PASSED";

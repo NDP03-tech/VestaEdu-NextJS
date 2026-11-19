@@ -106,3 +106,20 @@ export const AttemptSubmitSchema = z.object({
   answers: z.array(AttemptAnswerSchema),
 });
 
+export const AttemptGradeSchema = z.object({
+  grades: z
+    .array(
+      z.object({
+        questionId: z.number().int().positive(),
+        score: z.number().finite().nonnegative(),
+        feedback: z.string().max(2000).optional(),
+      }),
+    )
+    .min(1)
+    .refine(
+      (grades) =>
+        new Set(grades.map((grade) => grade.questionId)).size === grades.length,
+      { message: "Each question may be graded only once" },
+    ),
+});
+

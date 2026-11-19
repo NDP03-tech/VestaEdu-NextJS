@@ -98,6 +98,7 @@ import {
   GetBestAttemptsByUserUseCase,
   GetLatestAttemptUseCase,
   GetUserResultsStatsUseCase,
+  GradeAttemptUseCase,
   StartAttemptUseCase,
   SubmitAttemptUseCase,
   TempSaveAttemptUseCase,
@@ -432,6 +433,19 @@ export function createWorkflowControllers() {
         Number((request.user as { id?: number })?.id),
         body.answers ?? [],
       );
+    },
+    gradeAttempt: (request) => {
+      const body = (request.body ?? {}) as {
+        grades: Array<{
+          questionId: number;
+          score: number;
+          feedback?: string;
+        }>;
+      };
+      return new GradeAttemptUseCase(
+        repositories.results,
+        attemptQueries,
+      ).execute(request.params.resultId ?? "", body.grades);
     },
     getLatestResult: async (request) => {
       const result = await new GetLatestAttemptUseCase(

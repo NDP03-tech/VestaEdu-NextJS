@@ -15,6 +15,7 @@ export * from "./user-quiz-result.specialized.use-case.interface";
 export { StartAttemptUseCase } from "./start-attempt.usecase";
 export { TempSaveAttemptUseCase } from "./temp-save-attempt.usecase";
 export { SubmitAttemptUseCase } from "./submit-attempt.usecase";
+export { GradeAttemptUseCase } from "./grade-attempt.usecase";
 export { GetLatestAttemptUseCase } from "./get-latest-attempt.usecase";
 export {
   toStudentAttemptResponse,

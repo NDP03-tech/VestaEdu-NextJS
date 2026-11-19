@@ -1,4 +1,5 @@
 import {
+  AttemptGradeSchema,
   AttemptDraftSchema,
   AttemptSubmitSchema,
 } from "../schemas";
@@ -48,5 +49,31 @@ describe("attempt answer schemas", () => {
       }).state,
     ).toEqual({ currentQuestionId: 12 });
     expect(AttemptDraftSchema.parse({ answers: [] }).state).toBeUndefined();
+  });
+
+  it("accepts manual grades with optional teacher feedback", () => {
+    expect(
+      AttemptGradeSchema.parse({
+        grades: [{ questionId: 12, score: 2, feedback: "Good work" }],
+      }),
+    ).toEqual({
+      grades: [{ questionId: 12, score: 2, feedback: "Good work" }],
+    });
+  });
+
+  it("rejects duplicate question grades and negative scores", () => {
+    expect(
+      AttemptGradeSchema.safeParse({
+        grades: [
+          { questionId: 12, score: 1 },
+          { questionId: 12, score: 2 },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      AttemptGradeSchema.safeParse({
+        grades: [{ questionId: 12, score: -1 }],
+      }).success,
+    ).toBe(false);
   });
 });
