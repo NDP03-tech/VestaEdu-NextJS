@@ -291,6 +291,7 @@ describe("Quiz API", () => {
     const res = await request(app).put("/api/quizzes/1")
       .set(auth(adminToken)).send({ title: "Updated", version: 1 });
     expect(res.status).toBe(200);
+    expect(res.body.data.version).toBe(2);
   });
 
   test("PUT /api/quizzes/1/contents — teacher saves quiz and duplicate-stem questions", async () => {
@@ -309,6 +310,7 @@ describe("Quiz API", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.quiz.title).toBe("Saved quiz");
+    expect(res.body.data.quiz.version).toBe(2);
     expect(quizContentsUseCase.execute).toHaveBeenCalledWith("1", body);
   });
 

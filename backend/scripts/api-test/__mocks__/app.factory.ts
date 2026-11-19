@@ -122,7 +122,10 @@ export function buildTestApp() {
   const eventRepo = makeMockRepo(MOCK_EVENT);
   const instructorRepo = makeMockRepo(MOCK_INSTRUCTOR);
   const quizRepo = makeMockRepo(MOCK_QUIZ);
-  quizRepo.updateIfVersionMatches = jest.fn().mockResolvedValue(undefined);
+  quizRepo.updateIfVersionMatches = jest.fn(async (_id, quiz) => {
+    quiz.bumpVersion();
+    return quiz;
+  });
   quizRepo.getById.mockResolvedValue(
     QuizEntity.reconstitute({
       id: 1,
@@ -224,7 +227,7 @@ export function buildTestApp() {
   });
   const quizContentsUseCase = {
     execute: jest.fn(async () => ({
-      quiz: { toJSON: () => ({ id: 1, title: "Saved quiz" }) },
+      quiz: { toJSON: () => ({ id: 1, title: "Saved quiz", version: 2 }) },
       questions: [],
     })),
   };

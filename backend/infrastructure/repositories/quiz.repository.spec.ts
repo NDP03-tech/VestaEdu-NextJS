@@ -62,4 +62,73 @@ describe("QuizRepository lifecycle behavior", () => {
     ).rejects.toMatchObject({ statusCode: 409 });
     expect(manager.save).not.toHaveBeenCalled();
   });
+
+  it("increments and returns the version after a successful update", async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValue({ id: 7, version: 3 }),
+      save: jest.fn(async (_entity: unknown, row: unknown) => row),
+    };
+    const quiz = QuizEntity.reconstitute({
+      id: 7,
+      title: "Quiz",
+      category: "English",
+      visibleTo: "everyone",
+      uiSettings: QuizEntity.defaultUiSettings,
+      passingScore: 90,
+      status: "published",
+      version: 3,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const updated = await createRepository(manager).updateIfVersionMatches(
+      7,
+      quiz,
+      3,
+    );
+
+    expect(quiz.version).toBe(4);
+    expect(updated.version).toBe(4);
+    expect(manager.save).toHaveBeenCalledWith(
+      Quiz,
+      expect.objectContaining({ version: 4 }),
+    );
+  });
+
+  it("increments contents version once and rejects the previous version", async () => {
+    const quizRow = {
+      id: 7,
+      title: "Quiz",
+      category: "English",
+      visibleTo: "everyone",
+      passingScore: 90,
+      status: "published",
+      version: 3,
+      uiSettings: QuizEntity.defaultUiSettings,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const manager = {
+      findOne: jest.fn(async () => quizRow),
+      find: jest.fn().mockResolvedValue([]),
+      save: jest.fn(async (_entity: unknown, row: Record<string, unknown>) => {
+        Object.assign(quizRow, row);
+        return quizRow;
+      }),
+    };
+    const repository = createRepository(manager);
+    const input = {
+      quiz: { version: 3 },
+      questions: [],
+      deletedQuestionIds: [],
+    };
+
+    const saved = await repository.saveContents(7, input);
+
+    expect(saved.quiz.version).toBe(4);
+    await expect(repository.saveContents(7, input)).rejects.toMatchObject({
+      statusCode: 409,
+    });
+    expect(manager.save).toHaveBeenCalledTimes(1);
+  });
 });

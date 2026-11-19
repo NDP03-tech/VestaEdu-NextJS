@@ -7,18 +7,25 @@ describe("UpdateQuizUseCase", () => {
     const quiz = QuizEntity.create({ title: "Quiz" });
     const repository = {
       getById: jest.fn().mockResolvedValue(quiz),
-      updateIfVersionMatches: jest.fn().mockResolvedValue(undefined),
+      updateIfVersionMatches: jest.fn(async (_id, entity) => {
+        entity.bumpVersion();
+        return entity;
+      }),
     };
     const useCase = new UpdateQuizUseCase(repository as never);
 
-    await useCase.execute("1", { title: "Updated", version: quiz.version });
+    const updated = await useCase.execute("1", {
+      title: "Updated",
+      version: quiz.version,
+    });
 
     expect(repository.updateIfVersionMatches).toHaveBeenCalledWith(
       "1",
       quiz,
-      quiz.version,
+      1,
     );
     expect(quiz.title).toBe("Updated");
+    expect(updated.version).toBe(2);
   });
 
   it("rejects a missing version and surfaces a stale-version conflict", async () => {

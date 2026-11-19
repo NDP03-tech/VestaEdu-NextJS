@@ -77,7 +77,7 @@ export class QuizEntity {
     private _uiSettings: QuizUiSettings,
     private _passingScore: number,
     private _status: QuizStatus,
-    private readonly _version: number,
+    private _version: number,
     private readonly _createdAt: Date,
     private _updatedAt: Date
   ) {}
@@ -208,6 +208,11 @@ export class QuizEntity {
       throw new Error("status must be draft, published, or archived");
     }
     this._status = status;
+    this._updatedAt = new Date();
+  }
+
+  bumpVersion(): void {
+    this._version += 1;
     this._updatedAt = new Date();
   }
 

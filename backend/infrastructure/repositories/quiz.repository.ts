@@ -77,9 +77,9 @@ export class QuizRepository
     id: string | number,
     entity: QuizEntity,
     expectedVersion: number,
-  ): Promise<void> {
+  ): Promise<QuizEntity> {
     const quizId = Number(id);
-    await this.dataSource.transaction(async (manager) => {
+    return this.dataSource.transaction(async (manager) => {
       const current = await manager.findOne(Quiz, {
         where: { id: quizId },
         lock: { mode: "pessimistic_write" },
@@ -95,9 +95,11 @@ export class QuizRepository
         );
       }
 
+      entity.bumpVersion();
       const updated = QuizMapper.toPersistence(entity);
       updated.updatedAt = new Date();
-      await manager.save(Quiz, updated);
+      const saved = await manager.save(Quiz, updated);
+      return QuizMapper.toDomain(saved);
     });
   }
 
@@ -230,6 +232,7 @@ export class QuizRepository
         }
       }
 
+      quiz.bumpVersion();
       const quizPersistence = QuizMapper.toPersistence(quiz);
       quizPersistence.updatedAt = new Date();
       const savedQuiz = await manager.save(Quiz, quizPersistence);

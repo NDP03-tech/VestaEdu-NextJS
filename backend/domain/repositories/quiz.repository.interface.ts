@@ -11,5 +11,5 @@ export interface quizRepository {
     id: string | number,
     quiz: QuizEntity,
     expectedVersion: number,
-  ): Promise<void>;
+  ): Promise<QuizEntity>;
 }

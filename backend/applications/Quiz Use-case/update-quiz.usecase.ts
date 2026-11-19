@@ -18,14 +18,15 @@ export class UpdateQuizUseCase {
   async execute(
     id: EntityId,
     update: UpdateQuiz | QuizUpdateInput,
-  ): Promise<void> {
+  ): Promise<QuizEntity> {
     const key = normalizeEntityId(id, "Quiz");
     const entity = await this.repository.getById(key);
     if (!entity) throw notFound("Quiz", id);
     if (typeof update === "function") {
       update(entity);
+      entity.bumpVersion();
       await this.repository.update(key, entity);
-      return;
+      return entity;
     } else if (typeof update === "object" && update !== null) {
       try {
         const expectedVersion = Number(update.version);
@@ -62,7 +63,7 @@ export class UpdateQuizUseCase {
     } else {
       throw new InputValidationError("Quiz update must be an object");
     }
-    await this.repository.updateIfVersionMatches(
+    return this.repository.updateIfVersionMatches(
       key,
       entity,
       Number(update.version),
