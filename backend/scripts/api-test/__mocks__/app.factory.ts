@@ -374,6 +374,7 @@ export function buildTestApp() {
   app.get("/api/classes/:classId", (_req, res) => res.status(200).json({ data: MOCK_CLASS.toJSON() }));
   app.post("/api/classes/:classId/add-user", (_req, res) => res.status(200).json({ data: MOCK_CLASS.toJSON() }));
   app.post("/api/classes/:classId/add-quiz", (_req, res) => res.status(200).json({ data: MOCK_CLASS.toJSON() }));
+  app.delete("/api/classes/:classId/quizzes/:quizId", (_req, res) => res.status(204).json(null));
   app.get("/api/classes/:classId/quizzes", (_req, res) => res.status(200).json({ data: [MOCK_QUIZ.toJSON()] }));
   app.get("/api/classes/:classId/students", (_req, res) => res.status(200).json({ data: [] }));
   app.post("/api/classes/:classId/students", (_req, res) => res.status(200).json({ data: MOCK_CLASS.toJSON() }));

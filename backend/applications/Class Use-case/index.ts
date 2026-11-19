@@ -18,5 +18,6 @@ export { AddStudentsToClassUseCase } from "./add-students-to-class.usecase";
 export { RemoveStudentFromClassUseCase } from "./remove-student-from-class.usecase";
 export { MoveStudentsUseCase } from "./move-students.usecase";
 export { AddQuizToClassUseCase } from "./add-quiz-to-class.usecase";
+export { RemoveQuizFromClassUseCase } from "./remove-quiz-from-class.usecase";
 export { GetStudentsInClassUseCase } from "./get-students-in-class.usecase";
 export { GetQuizzesOfClassUseCase } from "./get-quizzes-of-class.usecase";

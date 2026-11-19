@@ -87,6 +87,7 @@ import {
   GetQuizzesOfClassUseCase,
   GetStudentsInClassUseCase,
   MoveStudentsUseCase,
+  RemoveQuizFromClassUseCase,
   RemoveStudentFromClassUseCase,
   UpdateClassUseCase,
 } from "../../applications/Class Use-case";
@@ -351,6 +352,11 @@ export function createWorkflowControllers() {
       new AddQuizToClassUseCase(repositories.classes).execute(
         request.params.classId ?? "",
         Number((request.body as { quizId?: number })?.quizId),
+      ),
+    removeQuizFromClass: (request) =>
+      new RemoveQuizFromClassUseCase(repositories.classes).execute(
+        request.params.classId ?? "",
+        Number(request.params.quizId),
       ),
     getStudentsInClass: (request) =>
       new GetStudentsInClassUseCase(repositories.classes).execute(

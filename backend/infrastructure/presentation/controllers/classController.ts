@@ -31,6 +31,11 @@ export class ClassController extends WorkflowController {
     this.handle("moveStudents", req, res, next);
   addQuizToClass = (req: HttpRequest, res: HttpResponse, next: NextFunction) =>
     this.handle("addQuizToClass", req, res, next);
+  removeQuizFromClass = (
+    req: HttpRequest,
+    res: HttpResponse,
+    next: NextFunction,
+  ) => this.handle("removeQuizFromClass", req, res, next);
   getStudentsInClass = (
     req: HttpRequest,
     res: HttpResponse,

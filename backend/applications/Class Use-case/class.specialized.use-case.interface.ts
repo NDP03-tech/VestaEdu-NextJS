@@ -11,6 +11,7 @@ export interface ClassMembershipRepository {
     studentIds: number[],
   ): Promise<void>;
   addQuiz(classId: string, quizId: number): Promise<void>;
+  removeQuiz(classId: string, quizId: number): Promise<void>;
   getStudentIds(classId: string): Promise<number[]>;
   getQuizIds(classId: string): Promise<number[]>;
 }

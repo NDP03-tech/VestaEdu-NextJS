@@ -108,6 +108,13 @@ export class ClassRepository
     await this.quizRepository.save(row);
   }
 
+  async removeQuiz(classId: string, quizId: number): Promise<void> {
+    await this.quizRepository.update(
+      { class_id: Number(classId), quiz_id: quizId, isActive: true },
+      { isActive: false },
+    );
+  }
+
   async getStudentIds(classId: string): Promise<number[]> {
     const rows = await this.studentRepository.findBy({
       class_id: Number(classId),

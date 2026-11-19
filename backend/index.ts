@@ -405,6 +405,10 @@ async function start(): Promise<void> {
     "/api/classes/:classId/add-quiz",
     workflows.classController.addQuizToClass as never,
   );
+  app.delete(
+    "/api/classes/:classId/quizzes/:quizId",
+    workflows.classController.removeQuizFromClass as never,
+  );
   app.get(
     "/api/classes/:classId/quizzes",
     workflows.classController.getQuizzesOfClass as never,

@@ -547,6 +547,12 @@ describe("Class API", () => {
     expect(res.status).toBe(200);
   });
 
+  test("DELETE /api/classes/1/quizzes/1 — teacher → 204", async () => {
+    const res = await request(app).delete("/api/classes/1/quizzes/1")
+      .set(auth(teacherToken));
+    expect(res.status).toBe(204);
+  });
+
   test("GET /api/classes/1/quizzes — admin → 200", async () => {
     const res = await request(app).get("/api/classes/1/quizzes").set(auth(adminToken));
     expect(res.status).toBe(200);
