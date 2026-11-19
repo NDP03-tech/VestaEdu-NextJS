@@ -1,5 +1,4 @@
 import type { userQuizResultRepository } from "../../domain/repositories/user-quiz-result.repository.interface";
-import type { UserQuizResultEntity } from "../../domain/entities";
 import type {
   AttemptDomainQueries,
   RawAttemptAnswer,
@@ -7,6 +6,10 @@ import type {
 import { normalizeEntityId } from "../use-case.helpers";
 import { AttemptOwnershipError } from "./user-quiz-result.exceptions";
 import { isPastAttemptDeadline } from "./attempt-deadline.helpers";
+import {
+  toStudentAttemptResponse,
+  type StudentAttemptResponse,
+} from "./student-attempt-response";
 
 export class SubmitAttemptUseCase {
   constructor(
@@ -17,7 +20,7 @@ export class SubmitAttemptUseCase {
     resultId: string | number,
     userId: number,
     answers: RawAttemptAnswer[],
-  ): Promise<UserQuizResultEntity> {
+  ): Promise<StudentAttemptResponse> {
     const key = normalizeEntityId(resultId, "UserQuizResult");
     const result = await this.results.getById(key);
     if (!result) throw new Error(`UserQuizResult ${key} not found`);
@@ -27,13 +30,14 @@ export class SubmitAttemptUseCase {
     const submittedLate =
       quiz.uiSettings.mode === "exam" &&
       isPastAttemptDeadline(result.deadline);
+    const questions = await this.queries.getQuestions(result.quizId);
     result.submit(
-      await this.queries.getQuestions(result.quizId),
+      questions,
       submittedLate ? result.answers : answers,
       quiz.passingScore,
       submittedLate,
     );
     await this.results.update(key, result);
-    return result;
+    return toStudentAttemptResponse(result, quiz, questions);
   }
 }

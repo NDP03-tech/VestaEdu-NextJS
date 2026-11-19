@@ -225,6 +225,7 @@ const QuizPreviewWrapper = () => {
             : "🚫 Bạn chưa đạt yêu cầu. Hãy thử lại!"
         }
         score={ui.displayScore ? result?.score : null}
+        reviewAnswers={result?.reviewAnswers}
       />
     );
   }

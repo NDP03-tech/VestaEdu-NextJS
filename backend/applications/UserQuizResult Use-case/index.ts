@@ -16,6 +16,10 @@ export { StartAttemptUseCase } from "./start-attempt.usecase";
 export { TempSaveAttemptUseCase } from "./temp-save-attempt.usecase";
 export { SubmitAttemptUseCase } from "./submit-attempt.usecase";
 export { GetLatestAttemptUseCase } from "./get-latest-attempt.usecase";
+export {
+  toStudentAttemptResponse,
+  type StudentAttemptResponse,
+} from "./student-attempt-response";
 export { GetAllAttemptsUseCase } from "./get-all-attempts.usecase";
 export { GetBestAttemptUseCase } from "./get-best-attempt.usecase";
 export { GetBestAttemptsByQuizUseCase } from "./get-best-attempts-by-quiz.usecase";

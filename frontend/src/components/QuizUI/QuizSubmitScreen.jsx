@@ -1,7 +1,13 @@
 import React from "react";
 import { Card, CardBody } from "../ui/Card";
 
-const QuizSubmitScreen = ({ score, message }) => {
+const displayAnswer = (value) => {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string" || typeof value === "number") return value;
+  return JSON.stringify(value);
+};
+
+const QuizSubmitScreen = ({ score, message, reviewAnswers = [] }) => {
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-4">
       <Card className="w-full max-w-xl border-slate-200/80 shadow-2xl rounded-2xl overflow-hidden text-center animate-fade-in">
@@ -48,6 +54,44 @@ const QuizSubmitScreen = ({ score, message }) => {
             <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-sm text-slate-600 leading-relaxed text-center">
               <div dangerouslySetInnerHTML={{ __html: message }} />
             </div>
+          )}
+
+          {reviewAnswers.length > 0 && (
+            <section className="mt-6 space-y-4 text-left" aria-label="Answer review">
+              <h3 className="text-lg font-semibold text-slate-800">
+                Answer review
+              </h3>
+              {reviewAnswers.map((item) => (
+                <article
+                  key={item.questionId}
+                  className="rounded-xl border border-slate-200 bg-white p-4"
+                >
+                  <h4 className="font-semibold text-slate-800">
+                    {item.questionText || `Question ${item.questionId}`}
+                  </h4>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Your answer: {displayAnswer(item.answer)}
+                  </p>
+                  {item.requiresManualGrading ? (
+                    <p className="mt-1 text-sm text-slate-600">
+                      Awaiting manual grading.
+                    </p>
+                  ) : item.breakdown?.map((part, index) => (
+                    <p
+                      key={`${item.questionId}-${index}`}
+                      className="mt-1 text-sm text-slate-600"
+                    >
+                      Correct answer: {displayAnswer(part.correctAnswer)}
+                    </p>
+                  ))}
+                  {item.explanation && (
+                    <p className="mt-2 text-sm text-slate-600">
+                      Explanation: {item.explanation}
+                    </p>
+                  )}
+                </article>
+              ))}
+            </section>
           )}
         </CardBody>
       </Card>

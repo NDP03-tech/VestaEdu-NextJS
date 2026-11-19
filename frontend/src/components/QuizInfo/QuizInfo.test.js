@@ -33,7 +33,10 @@ describe("QuizInfo attempt settings", () => {
         expect.objectContaining({
           version: 4,
           passingScore: 75,
-          uiSettings: expect.objectContaining({ mode: "exam" }),
+          uiSettings: expect.objectContaining({
+            mode: "exam",
+            revealAnswers: false,
+          }),
         }),
       );
     });

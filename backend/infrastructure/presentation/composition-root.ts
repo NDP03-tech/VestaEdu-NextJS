@@ -101,6 +101,7 @@ import {
   StartAttemptUseCase,
   SubmitAttemptUseCase,
   TempSaveAttemptUseCase,
+  toStudentAttemptResponse,
 } from "../../applications/UserQuizResult Use-case";
 import type { RawAnswerInput } from "../../domain/entities/user-quiz-result.entity";
 import { UserQuizResultController } from "./controllers/userQuizResultController";
@@ -374,6 +375,28 @@ export function createWorkflowControllers() {
     getQuestions: (quizId: number) =>
       repositories.questions.getByQuizId(String(quizId)),
   };
+  const formatAttemptForViewer = async (request: Parameters<
+    PresentationHandlers[string]
+  >[0], result: Awaited<ReturnType<typeof repositories.results.getById>>) => {
+    if (!result) return null;
+    const role = (request.user as { role?: string } | undefined)?.role;
+    if (role !== "student") return result.toJSON();
+
+    const quiz = await repositories.quizzes.getById(result.quizId);
+    if (!quiz) throw new Error(`Quiz ${result.quizId} not found`);
+    const revealAnswers =
+      result.isSubmitted() &&
+      (quiz.uiSettings.mode !== "exam" || quiz.uiSettings.revealAnswers);
+    const questions = revealAnswers
+      ? await repositories.questions.getByQuizId(String(result.quizId))
+      : [];
+    return toStudentAttemptResponse(result, quiz, questions);
+  };
+  const formatAttemptsForViewer = async (
+    request: Parameters<PresentationHandlers[string]>[0],
+    results: Awaited<ReturnType<typeof repositories.results.getByUserQuiz>>,
+  ) => Promise.all(results.map((result) => formatAttemptForViewer(request, result)));
+
   const resultController = new UserQuizResultController({
     startAttempt: async (request) => {
       const result = await new StartAttemptUseCase(
@@ -383,7 +406,9 @@ export function createWorkflowControllers() {
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
       );
-      return { ...result.toJSON(), serverNow: new Date() };
+      const formatted = await formatAttemptForViewer(request, result);
+      if (!formatted) throw new Error("Started attempt could not be formatted");
+      return { ...formatted, serverNow: new Date() };
     },
     tempSave: (request) => {
       const body = (request.body ?? {}) as {
@@ -416,15 +441,18 @@ export function createWorkflowControllers() {
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
       );
-      return result
-        ? { ...result.toJSON(), serverNow: new Date() }
-        : null;
+      const formatted = await formatAttemptForViewer(request, result);
+      return formatted ? { ...formatted, serverNow: new Date() } : null;
     },
-    getAllAttempts: (request) =>
-      new GetAllAttemptsUseCase(repositories.results).execute(
+    getAllAttempts: async (request) => {
+      const results = await new GetAllAttemptsUseCase(
+        repositories.results,
+      ).execute(
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
-      ),
+      );
+      return formatAttemptsForViewer(request, results);
+    },
     getUserResultsStats: (request) =>
       new GetUserResultsStatsUseCase(repositories.results).execute(
         Number((request.user as { id?: number })?.id),
@@ -433,23 +461,34 @@ export function createWorkflowControllers() {
       new GetBestAttemptsByQuizUseCase(repositories.results).execute(
         Number(request.params.quizId),
       ),
-    getUserQuizBestAttempt: (request) =>
-      repositories.results.getBest(
-        Number(request.params.userId),
-        Number(request.params.quizId),
+    getUserQuizBestAttempt: async (request) =>
+      formatAttemptForViewer(
+        request,
+        await repositories.results.getBest(
+          Number(request.params.userId),
+          Number(request.params.quizId),
+        ),
       ),
-    getUserQuizSummaryByUserId: (request) =>
-      new GetBestAttemptsByUserUseCase(repositories.results).execute(
+    getUserQuizSummaryByUserId: async (request) => {
+      const results = await new GetBestAttemptsByUserUseCase(
+        repositories.results,
+      ).execute(
         Number(request.params.userId),
-      ),
+      );
+      return formatAttemptsForViewer(request, results);
+    },
     getBestAttemptsByQuiz: (request) =>
       new GetBestAttemptsByQuizUseCase(repositories.results).execute(
         Number(request.params.quizId),
       ),
-    getBestAttemptsByUserId: (request) =>
-      new GetBestAttemptsByUserUseCase(repositories.results).execute(
+    getBestAttemptsByUserId: async (request) => {
+      const results = await new GetBestAttemptsByUserUseCase(
+        repositories.results,
+      ).execute(
         Number(request.params.userId),
-      ),
+      );
+      return formatAttemptsForViewer(request, results);
+    },
   });
 
   const assignedQuizController = new AssignedQuizController({

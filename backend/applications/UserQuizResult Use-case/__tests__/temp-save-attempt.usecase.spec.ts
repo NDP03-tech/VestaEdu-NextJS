@@ -18,7 +18,10 @@ describe("TempSaveAttemptUseCase", () => {
     };
     const useCase = new TempSaveAttemptUseCase(repository as never, queries);
 
-    await expect(useCase.execute("17", 3, [])).resolves.toBe(result);
+    await expect(useCase.execute("17", 3, [])).resolves.toMatchObject({
+      quizId: 8,
+      answers: [],
+    });
     expect(repository.update).toHaveBeenCalledWith("17", result);
   });
 
@@ -70,7 +73,8 @@ describe("TempSaveAttemptUseCase", () => {
 
     expect(submitted.submittedAt).not.toBeNull();
     expect(submitted.submittedLate).toBe(true);
-    expect(submitted.answers[0].answer).toBe("saved");
+    expect(submitted).not.toHaveProperty("answers");
+    expect(result.answers[0].answer).toBe("saved");
     expect(repository.update).toHaveBeenCalledWith("17", result);
   });
 });

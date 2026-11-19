@@ -387,6 +387,7 @@ const QuizPreviewWrapper = () => {
           message={ui.quizCompleteMessage}
           hasSubmitted={hasSubmitted}
           score={ui.displayScore ? result?.score : null}
+          reviewAnswers={result?.reviewAnswers}
           answers={answers}
           scoreAfterSubmit={scoreAfterSubmit}
           correctAnswers={(result?.result || result)?.correctAnswers || []}

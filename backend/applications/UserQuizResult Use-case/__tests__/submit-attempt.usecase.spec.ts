@@ -19,7 +19,13 @@ describe("SubmitAttemptUseCase", () => {
     };
     const useCase = new SubmitAttemptUseCase(results as never, queries);
 
-    await expect(useCase.execute("17", 3, [])).resolves.toBe(result);
+    const response = await useCase.execute("17", 3, []);
+
+    expect(response).toMatchObject({
+      quizId: 8,
+      answers: [],
+      reviewAnswers: [],
+    });
     expect(results.update).toHaveBeenCalledWith("17", result);
   });
 
@@ -71,7 +77,8 @@ describe("SubmitAttemptUseCase", () => {
     ]);
 
     expect(submitted.submittedLate).toBe(true);
-    expect(submitted.answers[0].answer).toBe("saved");
+    expect(submitted).not.toHaveProperty("answers");
+    expect(result.answers[0].answer).toBe("saved");
     expect(results.update).toHaveBeenCalledWith("17", result);
   });
 
@@ -98,5 +105,8 @@ describe("SubmitAttemptUseCase", () => {
 
     expect(submitted.submittedLate).toBe(false);
     expect(submitted.answers[0].answer).toBe("practice answer");
+    expect(submitted.reviewAnswers).toMatchObject([
+      { questionId: 11, answer: "practice answer" },
+    ]);
   });
 });

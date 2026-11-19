@@ -6,6 +6,7 @@ export const isQuizStatus = (value: unknown): value is QuizStatus =>
 
 export interface QuizUiSettings {
   mode: "practice" | "exam";
+  revealAnswers: boolean;
   oneQuestionPerPage: boolean;
   showQuestionNumbers: boolean;
   shuffle: "none" | "questions" | "answers" | "both";
@@ -54,6 +55,7 @@ const DEFAULT_PASSING_SCORE = 90;
 
 const DEFAULT_UI: QuizUiSettings = {
   mode: "practice",
+  revealAnswers: false,
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
   shuffle: "none",

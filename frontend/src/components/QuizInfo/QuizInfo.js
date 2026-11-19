@@ -30,6 +30,7 @@ const { Option } = Select;
 
 const defaultSettings = {
   mode: "practice",
+  revealAnswers: false,
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
   shuffle: "none",
@@ -405,6 +406,13 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
                   ))}
                 </Select>
               </Field>
+              {uiSettings.mode === "exam" && (
+                <ToggleRow
+                  label="Reveal answers after submission"
+                  checked={uiSettings.revealAnswers}
+                  onChange={(checked) => setSetting("revealAnswers", checked)}
+                />
+              )}
             </Group>
           </div>
         </AccordionItem>

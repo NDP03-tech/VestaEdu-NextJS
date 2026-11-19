@@ -14,6 +14,7 @@ import { ClassQuiz } from "./ClassQuiz";
 
 export interface QuizUiSettings {
   mode: "practice" | "exam";
+  revealAnswers: boolean;
   oneQuestionPerPage: boolean;
   showQuestionNumbers: boolean;
   shuffle: string;
@@ -32,6 +33,7 @@ export interface QuizUiSettings {
 
 const DEFAULT_UI_SETTINGS: QuizUiSettings = {
   mode: "practice",
+  revealAnswers: false,
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
   shuffle: "none",
