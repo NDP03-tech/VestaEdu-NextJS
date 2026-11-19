@@ -69,4 +69,43 @@ describe("QuizRunner attempt state", () => {
       elapsed: 30,
     });
   });
+
+  it("uses the server deadline and retries failed automatic submission", async () => {
+    const onSubmit = jest
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Network unavailable"))
+      .mockResolvedValueOnce(undefined);
+    render(
+      <QuizRunner
+        questions={[{ id: 101 }]}
+        timeLimit={60}
+        deadline="2030-01-01T00:00:02.000Z"
+        serverNow="2030-01-01T00:00:00.000Z"
+        resultId="attempt-deadline"
+        onSubmit={onSubmit}
+        onAnswerChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("00:02")).toBeInTheDocument();
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSubmit).toHaveBeenCalledWith({ automatic: true });
+    expect(
+      screen.getByText("Submission failed. Retrying automatically..."),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+  });
 });

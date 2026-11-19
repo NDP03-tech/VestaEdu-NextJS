@@ -9,6 +9,10 @@ import QuizSubmitScreen from "../components/QuizUI/QuizSubmitScreen";
 import { Button } from "antd";
 import config from '../config';
 import { createAttemptAutosave } from "../services/attemptAutosave";
+
+const createHttpError = (message, status) =>
+  Object.assign(new Error(message), { status });
+
 const QuizPreviewWrapper = () => {
   const { quizId } = useParams();
   const [quiz, setQuiz] = useState(null);
@@ -225,7 +229,8 @@ const QuizPreviewWrapper = () => {
   // -------------------------
   // Submit handler
   // -------------------------
-  const handleSubmit = async () => {
+  const handleSubmit = async (options = {}) => {
+    const automatic = options?.automatic === true;
     console.log("🔔 handleSubmit called!");
     console.log("🧪 Attempt number:", attemptNumber);
 
@@ -241,7 +246,10 @@ const QuizPreviewWrapper = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!startRes.ok) {
-          throw new Error(`Failed to start attempt: HTTP ${startRes.status}`);
+          throw createHttpError(
+            `Failed to start attempt: HTTP ${startRes.status}`,
+            startRes.status,
+          );
         }
         const startBody = await startRes.json();
         currentResult = startBody?.data ?? startBody;
@@ -269,7 +277,10 @@ const QuizPreviewWrapper = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!startRes.ok) {
-          throw new Error(`Failed to start retry: HTTP ${startRes.status}`);
+          throw createHttpError(
+            `Failed to start retry: HTTP ${startRes.status}`,
+            startRes.status,
+          );
         }
         const startBody = await startRes.json();
         currentResult = startBody?.data ?? startBody;
@@ -293,7 +304,10 @@ const QuizPreviewWrapper = () => {
       });
 
       if (!submitRes.ok) {
-        throw new Error(`Submit failed with HTTP ${submitRes.status}`);
+        throw createHttpError(
+          `Submit failed with HTTP ${submitRes.status}`,
+          submitRes.status,
+        );
       }
       const submitBody = await submitRes.json();
       const submittedResult =
@@ -311,6 +325,7 @@ const QuizPreviewWrapper = () => {
       setResult(submittedResult);
     } catch (err) {
       console.error("❌ Error while submitting:", err);
+      if (automatic) throw err;
       alert(err.message || "Không thể nộp bài. Vui lòng thử lại.");
     }
   };
@@ -473,6 +488,8 @@ const QuizPreviewWrapper = () => {
         onAnswerChange={handleAnswerChange}
         onSubmit={handleSubmit}
         timeLimit={ui.timeLimit || 0}
+        deadline={result?.deadline}
+        serverNow={result?.serverNow}
         hasSubmitted={hasSubmitted}
         showCorrectAnswer={quiz.visibleTo === "everyone_record" || hasSubmitted}
         initialAnswers={answers}

@@ -6,6 +6,19 @@ import { Badge } from "../ui/Badge";
 import { prepareShuffledQuestions } from "./quizShuffle";
 
 const EMPTY_ATTEMPT_STATE = Object.freeze({});
+const AUTO_SUBMIT_RETRY_DELAY = 3000;
+
+const getRemainingSeconds = (deadline, serverNow, timeLimit, elapsed) => {
+  const deadlineTime =
+    deadline == null ? Number.NaN : new Date(deadline).getTime();
+  const serverTime =
+    serverNow == null ? Number.NaN : new Date(serverNow).getTime();
+  if (Number.isFinite(deadlineTime) && Number.isFinite(serverTime)) {
+    return Math.max(0, Math.ceil((deadlineTime - serverTime) / 1000));
+  }
+  const remaining = Number(timeLimit) * 60 - elapsed;
+  return Number.isFinite(remaining) ? Math.max(0, Math.ceil(remaining)) : 0;
+};
 
 const QuizRunner = ({
   questions = [],
@@ -18,6 +31,8 @@ const QuizRunner = ({
   timeLimit,
   hasSubmitted,
   scoreAfterSubmit,
+  deadline,
+  serverNow,
   initialAnswers = {},
   initialState = EMPTY_ATTEMPT_STATE,
   onAttemptStateChange,
@@ -28,14 +43,33 @@ const QuizRunner = ({
   const [flaggedQuestionIds, setFlaggedQuestionIds] = useState([]);
   const elapsedRef = useRef(0);
   const [secondsLeft, setSecondsLeft] = useState(
-    timeLimit ? timeLimit * 60 : 0
+    () =>
+      getRemainingSeconds(
+        deadline,
+        serverNow,
+        timeLimit,
+        Number(initialState?.elapsed) || 0,
+      ),
   );
+  const [autoSubmitStatus, setAutoSubmitStatus] = useState(null);
+  const autoSubmitStartedRef = useRef(false);
+  const autoSubmitRetryCountRef = useRef(0);
+  const onSubmitRef = useRef(onSubmit);
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
   const [frozenAnswers, setFrozenAnswers] = useState(null);
   const showQuestionNumbers = uiSettings.showQuestionNumbers ?? true;
   const displayedQuestions = useMemo(
     () => prepareShuffledQuestions(questions, uiSettings.shuffle, resultId),
     [questions, uiSettings.shuffle, resultId],
   );
+  const hasServerDeadline =
+    deadline != null &&
+    serverNow != null &&
+    Number.isFinite(new Date(deadline).getTime()) &&
+    Number.isFinite(new Date(serverNow).getTime());
+  const hasCountdown = Number(timeLimit) > 0 || hasServerDeadline;
 
   useEffect(() => {
     const savedState =
@@ -62,26 +96,83 @@ const QuizRunner = ({
     setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
     setFlaggedQuestionIds(restoredFlags);
     elapsedRef.current = elapsed;
-    setSecondsLeft(timeLimit ? Math.max(timeLimit * 60 - elapsed, 0) : 0);
+    setSecondsLeft(getRemainingSeconds(deadline, serverNow, timeLimit, elapsed));
     setFrozenAnswers(null);
-  }, [displayedQuestions, initialState, questions, timeLimit, resultId]);
+  }, [
+    deadline,
+    displayedQuestions,
+    initialState,
+    questions,
+    serverNow,
+    timeLimit,
+    resultId,
+  ]);
 
   useEffect(() => {
-    if (!timeLimit) return;
+    if (!hasCountdown || hasSubmitted) return undefined;
 
     const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setSecondsLeft((previous) => Math.max(0, previous - 1));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timeLimit, onSubmit]);
+  }, [hasCountdown, hasSubmitted]);
+
+  useEffect(() => {
+    if (hasSubmitted) {
+      autoSubmitStartedRef.current = false;
+      autoSubmitRetryCountRef.current = 0;
+      setAutoSubmitStatus(null);
+      return undefined;
+    }
+    if (!hasCountdown || secondsLeft > 0) {
+      autoSubmitStartedRef.current = false;
+      return undefined;
+    }
+    if (autoSubmitStartedRef.current) return undefined;
+
+    autoSubmitStartedRef.current = true;
+    let active = true;
+    let retryTimer;
+    const submitAutomatically = async () => {
+      if (!active) return;
+      setAutoSubmitStatus("submitting");
+      try {
+        await onSubmitRef.current?.({ automatic: true });
+        if (active) {
+          autoSubmitRetryCountRef.current = 0;
+          setAutoSubmitStatus(null);
+        }
+      } catch (error) {
+        if (!active) return;
+        const retryable =
+          error instanceof TypeError ||
+          error?.retryable === true ||
+          error?.status === 408 ||
+          error?.status === 429 ||
+          error?.status >= 500;
+        if (retryable) {
+          setAutoSubmitStatus("retrying");
+          const delay = Math.min(
+            AUTO_SUBMIT_RETRY_DELAY * 2 ** autoSubmitRetryCountRef.current,
+            30_000,
+          );
+          autoSubmitRetryCountRef.current += 1;
+          retryTimer = setTimeout(submitAutomatically, delay);
+        } else {
+          autoSubmitStartedRef.current = false;
+          autoSubmitRetryCountRef.current = 0;
+          setAutoSubmitStatus("failed");
+        }
+      }
+    };
+
+    submitAutomatically();
+    return () => {
+      active = false;
+      clearTimeout(retryTimer);
+    };
+  }, [hasCountdown, hasSubmitted, secondsLeft]);
 
   useEffect(() => {
     if (hasSubmitted) return undefined;
@@ -285,6 +376,16 @@ const QuizRunner = ({
 
       {/* ── Main Quiz Container ── */}
       <main className="max-w-4xl mx-auto px-4 mt-6">
+        {autoSubmitStatus && (
+          <p role="status" aria-live="polite" className="mb-4 text-center">
+            {autoSubmitStatus === "submitting" &&
+              "Time expired. Submitting your answers..."}
+            {autoSubmitStatus === "retrying" &&
+              "Submission failed. Retrying automatically..."}
+            {autoSubmitStatus === "failed" &&
+              "Automatic submission failed. Please retry manually."}
+          </p>
+        )}
         {/* Score banner after submitted */}
         {hasSubmitted && (
           <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-5 text-white shadow-lg flex items-center justify-between">

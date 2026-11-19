@@ -9,6 +9,9 @@ import QuizRunner from "../components/QuizUI/QuizRunner";
 import QuizSubmitScreen from "../components/QuizUI/QuizSubmitScreen";
 import { createAttemptAutosave } from "../services/attemptAutosave";
 
+const createHttpError = (message, status) =>
+  Object.assign(new Error(message), { status });
+
 const QuizPreviewWrapper = () => {
   const { quizId } = useParams();
   const [quiz, setQuiz] = useState(null);
@@ -164,7 +167,8 @@ const QuizPreviewWrapper = () => {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (options = {}) => {
+    const automatic = options?.automatic === true;
     autosaver.current.cancelPending();
     await autosaver.current.waitForIdle();
     const validQuestionIds = questions.map(q => q.id);
@@ -189,7 +193,10 @@ const QuizPreviewWrapper = () => {
           },
         );
         if (!startRes.ok) {
-          throw new Error(`Failed to start attempt: HTTP ${startRes.status}`);
+          throw createHttpError(
+            `Failed to start attempt: HTTP ${startRes.status}`,
+            startRes.status,
+          );
         }
         const startBody = await startRes.json();
         currentResult = startBody?.data ?? startBody;
@@ -209,7 +216,10 @@ const QuizPreviewWrapper = () => {
       });
 
       if (!res.ok) {
-        throw new Error(`Submit failed with HTTP ${res.status}`);
+        throw createHttpError(
+          `Submit failed with HTTP ${res.status}`,
+          res.status,
+        );
       }
       const body = await res.json();
       const resultData = body?.data?.result ?? body?.data ?? body;
@@ -221,6 +231,7 @@ const QuizPreviewWrapper = () => {
       }
     } catch (err) {
       console.error("❌ Lỗi khi nộp bài:", err);
+      if (automatic) throw err;
       alert(err.message || "Không thể nộp bài. Vui lòng thử lại.");
     }
   };
@@ -273,6 +284,8 @@ const QuizPreviewWrapper = () => {
         onAnswerChange={handleAnswerChange}
         onSubmit={handleSubmit}
         timeLimit={ui.timeLimit || 0}
+        deadline={result?.deadline}
+        serverNow={result?.serverNow}
         initialAnswers={answers}
         initialState={result?.state}
         onAttemptStateChange={handleAttemptStateChange}
