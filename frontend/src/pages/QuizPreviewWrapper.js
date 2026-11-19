@@ -88,11 +88,8 @@ const QuizPreviewWrapper = () => {
         let latestData = Object.prototype.hasOwnProperty.call(latestBody ?? {}, "data")
           ? latestBody.data
           : latestBody;
-        console.log("✅ Latest result (backend):", latestData);
-
         // 🧠 Nếu không có result thì tạo mới
         if (!latestData) {
-          console.log("🚀 No latest result found, creating a new attempt...");
           const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
@@ -102,8 +99,6 @@ const QuizPreviewWrapper = () => {
           }
           const startBody = await startRes.json();
           const startData = startBody?.data ?? startBody;
-          console.log("✅ Created result:", startData);
-
           if (!startData?.id) {
             alert("Không thể tạo result mới. Vui lòng thử lại.");
             return;
@@ -118,10 +113,6 @@ const QuizPreviewWrapper = () => {
         // 🧩 Nếu kết quả đã nộp
         if (latestData.submittedAt) {
           const lastScore = latestData.score || 0;
-          console.log(
-            `📦 Latest result already submitted — score: ${lastScore}%`
-          );
-
           const restored = (latestData.answers || []).reduce((acc, curr) => {
             const questionId = curr?.questionId ?? curr?.question;
             if (questionId != null) acc[questionId] = curr.answer;
@@ -134,17 +125,13 @@ const QuizPreviewWrapper = () => {
           setAttemptNumber(latestData.attemptNumber || 1);
 
           if (lastScore < Number(fetchedQuiz.passingScore ?? 90)) {
-            console.log("🔁 Score < 90% → allow retry after viewing result");
             setCanRetry(true);
-          } else {
-            console.log("✅ Score >= 90% → viewing mode only");
           }
 
           return;
         }
 
         // 🧩 Nếu chưa nộp thì resume lại
-        console.log("📍 Resuming not-yet-submitted result:", latestData.id);
         setResult(latestData);
 
         const restored = (latestData.answers || []).reduce((acc, curr) => {
@@ -176,12 +163,6 @@ const QuizPreviewWrapper = () => {
   const handleAnswerChange = (questionId, userAnswer, attemptState) => {
     const newAnswers = { ...answers, [questionId]: userAnswer };
     setAnswers(newAnswers);
-    console.log("📝 [FE] Answer changed:", {
-      questionId,
-      userAnswer,
-      allAnswers: newAnswers,
-    });
-
     if (!result?.id || result?.submittedAt) return;
 
     const validQuestionIds = questions.map((q) => q.id);
@@ -231,9 +212,6 @@ const QuizPreviewWrapper = () => {
   // -------------------------
   const handleSubmit = async (options = {}) => {
     const automatic = options?.automatic === true;
-    console.log("🔔 handleSubmit called!");
-    console.log("🧪 Attempt number:", attemptNumber);
-
     try {
       const token = localStorage.getItem("token");
       autosaver.current.cancelPending();
@@ -269,9 +247,6 @@ const QuizPreviewWrapper = () => {
       let submitUrl = `${config.API_URL}/api/results/submit/${currentResult.id}`;
 
       if (currentResult.submittedAt) {
-        console.log(
-          "🔁 Current result already submitted — creating new attempt before submit..."
-        );
         const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -293,7 +268,6 @@ const QuizPreviewWrapper = () => {
         submitUrl = `${config.API_URL}/api/results/submit/${currentResult.id}`;
       }
 
-      console.log("📤 Submitting answers to:", submitUrl);
       const submitRes = await fetch(submitUrl, {
         method: "POST",
         headers: {
@@ -318,8 +292,6 @@ const QuizPreviewWrapper = () => {
       if (!submittedResult?.id) {
         throw new Error("Submit response did not contain the saved result");
       }
-      console.log("🎯 Submit response:", submittedResult);
-
       setHasSubmitted(true);
       setScoreAfterSubmit(submittedResult.score || 0);
       setResult(submittedResult);
@@ -442,7 +414,6 @@ const QuizPreviewWrapper = () => {
             className="mt-4"
             onClick={async () => {
               const token = localStorage.getItem("token");
-              console.log("🔁 User requested retry, creating new attempt...");
               const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
@@ -452,7 +423,6 @@ const QuizPreviewWrapper = () => {
                 alert("Không thể tạo result mới. Vui lòng thử lại.");
                 return;
               }
-              console.log("✅ New retry attempt created:", startData);
               setResult(startData);
               setAnswers({});
               setHasSubmitted(false);

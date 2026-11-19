@@ -209,6 +209,74 @@ export const swaggerDocument = {
           "200": { description: "Quiz and all questions after the save" },
           "400": { description: "Invalid quiz or question data" },
           "404": { description: "Quiz or question not found" },
+          "409": {
+            description: "The quiz was changed by another editor",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { message: { type: "string" } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/questions/by-quiz/{quizId}": {
+      get: {
+        summary: "Get quiz questions using a student-safe response",
+        description:
+          "Students can retrieve questions only for published quizzes. Their response omits correct answers and explanations; teachers and admins receive authoring data.",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "quizId",
+            in: "path",
+            required: true,
+            schema: { type: "integer", minimum: 1 },
+          },
+        ],
+        responses: {
+          "200": { description: "Quiz questions" },
+          "400": { description: "quizId must be a positive integer" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Quiz not found or not published" },
+        },
+      },
+    },
+    "/api/results/start/{quizId}": {
+      post: {
+        summary: "Start or resume a quiz attempt",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "quizId",
+            in: "path",
+            required: true,
+            schema: { type: "integer", minimum: 1 },
+          },
+        ],
+        responses: {
+          "200": { description: "Attempt created or resumed" },
+          "404": { description: "Quiz not found or not published" },
+          "409": {
+            description: "Exam start is blocked by its configured attempt gates",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string" },
+                    code: {
+                      type: "string",
+                      enum: ["ALREADY_PASSED", "NO_ATTEMPTS_LEFT"],
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
