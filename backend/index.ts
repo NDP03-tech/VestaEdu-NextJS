@@ -48,6 +48,18 @@ const authenticateToken: express.RequestHandler = require(
 );
 const authorizeRoles = (...roles: string[]): express.RequestHandler =>
   require(path.join(__dirname, "..", "middleware", "authorizeRoles"))(...roles);
+const uploadMedia = require(
+  path.join(__dirname, "..", "middleware", "uploadMedia"),
+) as {
+  middleware: express.RequestHandler;
+  isValidAudioFile: (mimetype: string, buffer: Buffer) => boolean;
+};
+const uploadToCloudinary = require(
+  path.join(__dirname, "..", "utils", "uploadToCloudinary"),
+) as (
+  buffer: Buffer,
+  folder: string,
+) => Promise<{ secure_url?: string }>;
 
 const app = express();
 const port = Number(process.env.PORT ?? 5000);
@@ -316,6 +328,56 @@ async function start(): Promise<void> {
   app.post("/api/refresh", workflows.userController.refresh as never);
   app.post("/api/logout", workflows.userController.logout as never);
   app.get("/api/me", authenticateToken, workflows.userController.me as never);
+  app.post(
+    "/api/upload-media",
+    authenticateToken,
+    authorizeRoles("admin", "teacher"),
+    uploadMedia.middleware,
+    async (
+      request: express.Request,
+      response: express.Response,
+      next: express.NextFunction,
+    ) => {
+      try {
+        const file = (
+          request as express.Request & {
+            file?: { buffer: Buffer; mimetype: string };
+          }
+        ).file;
+        if (!file) {
+          response.status(400).json({ message: "Media file is required" });
+          return;
+        }
+        if (!uploadMedia.isValidAudioFile(file.mimetype, file.buffer)) {
+          response
+            .status(415)
+            .json({ message: "Media contents do not match the supported audio type" });
+          return;
+        }
+        if (
+          !process.env.CLOUDINARY_CLOUD_NAME ||
+          !process.env.CLOUDINARY_API_KEY ||
+          !process.env.CLOUDINARY_API_SECRET
+        ) {
+          response
+            .status(503)
+            .json({ message: "Media storage is not configured" });
+          return;
+        }
+
+        const uploadResult = await uploadToCloudinary(
+          file.buffer,
+          "vestaedu/media",
+        );
+        if (!uploadResult?.secure_url) {
+          throw new Error("Media storage did not return a secure URL");
+        }
+        response.status(201).json({ data: { url: uploadResult.secure_url } });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   app.get(
     "/api/:userId/quizzes",
     authenticateToken,
