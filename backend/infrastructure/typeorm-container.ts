@@ -93,6 +93,7 @@ export function createTypeOrmRepositories() {
     ),
     results: new UserQuizResultRepository(
       DataSourceConfig.getRepository(UserQuizResult),
+      DataSourceConfig,
     ),
     assignedQuizzes: new AssignedQuizTypeOrmRepository(
       DataSourceConfig.getRepository(ClassStudent),

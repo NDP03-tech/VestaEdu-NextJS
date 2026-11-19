@@ -37,4 +37,24 @@ export interface AttemptCounterQueries {
   update(id: string | number, counter: AttemptCounterEntity): Promise<void>;
 }
 
+export interface AttemptStartTransaction {
+  readonly counter: AttemptCounterEntity;
+  getQuiz(): Promise<QuizEntity | null>;
+  getUnsubmittedAttempt(): Promise<UserQuizResultEntity | null>;
+  hasPassedAttempt(): Promise<boolean>;
+  saveCounter(): Promise<void>;
+  createAttempt(
+    result: UserQuizResultEntity,
+  ): Promise<UserQuizResultEntity>;
+  updateAttempt(result: UserQuizResultEntity): Promise<void>;
+}
+
+export interface AttemptStartRepository {
+  withUserQuizStartLock<T>(
+    userId: number,
+    quizId: number,
+    operation: (transaction: AttemptStartTransaction) => Promise<T>,
+  ): Promise<T>;
+}
+
 export type RawAttemptAnswer = RawAnswerInput;

@@ -461,7 +461,7 @@ async function start(): Promise<void> {
     ) => {
       const candidate =
         typeof error === "object" && error !== null
-          ? (error as { statusCode?: number; name?: string })
+          ? (error as { statusCode?: number; name?: string; code?: string })
           : {};
       const statusCode =
         candidate.statusCode ??
@@ -476,6 +476,9 @@ async function start(): Promise<void> {
           statusCode < 500 && error instanceof Error
             ? error.message
             : "Internal server error",
+        ...(statusCode < 500 && candidate.code
+          ? { code: candidate.code }
+          : {}),
       });
     },
   );

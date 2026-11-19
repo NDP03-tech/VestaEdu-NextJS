@@ -13,3 +13,23 @@ export class AttemptOwnershipError extends Error {
     this.name = "AttemptOwnershipError";
   }
 }
+
+export class AlreadyPassedError extends Error {
+  readonly statusCode = 409;
+  readonly code = "ALREADY_PASSED";
+
+  constructor() {
+    super("You have already passed this exam");
+    this.name = "AlreadyPassedError";
+  }
+}
+
+export class NoAttemptsLeftError extends Error {
+  readonly statusCode = 409;
+  readonly code = "NO_ATTEMPTS_LEFT";
+
+  constructor() {
+    super("No attempts remain for this exam");
+    this.name = "NoAttemptsLeftError";
+  }
+}

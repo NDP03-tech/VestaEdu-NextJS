@@ -29,6 +29,7 @@ const { Option } = Select;
 /* ------------------------------------------------------------------ */
 
 const defaultSettings = {
+  mode: "practice",
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
   shuffle: "none",
@@ -158,6 +159,9 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
 
   const [visibleTo, setVisibleTo] = useState(quizInfo.visibleTo || "everyone");
   const [status, setStatus] = useState(quizInfo.status || "published");
+  const [passingScore, setPassingScore] = useState(
+    quizInfo.passingScore ?? 90,
+  );
   const [availableClasses, setAvailableClasses] = useState([]);
   const [assignedClasses, setAssignedClasses] = useState(quizInfo.classes || []);
 
@@ -182,6 +186,7 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
       uiSettings,
       visibleTo,
       status,
+      passingScore,
       classes: assignedClasses,
       version: quizVersion,
     });
@@ -191,6 +196,7 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
     uiSettings,
     visibleTo,
     status,
+    passingScore,
     assignedClasses,
     quizVersion,
     onQuizInfoChange,
@@ -354,6 +360,16 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
             </Group>
 
             <Group title="Quiz limits">
+              <Field label="Mode">
+                <Select
+                  className="w-full"
+                  value={uiSettings.mode}
+                  onChange={(value) => setSetting("mode", value)}
+                >
+                  <Option value="practice">Practice</Option>
+                  <Option value="exam">Exam</Option>
+                </Select>
+              </Field>
               <Field label="Time limit (minutes)">
                 <InputNumber
                   className="w-full"
@@ -366,6 +382,15 @@ const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
             </Group>
 
             <Group title="Attempts">
+              <Field label="Passing score (%)">
+                <InputNumber
+                  className="w-full"
+                  min={0}
+                  max={100}
+                  value={passingScore}
+                  onChange={(value) => setPassingScore(value ?? 90)}
+                />
+              </Field>
               <Field label="Max attempts">
                 <Select
                   className="w-full"

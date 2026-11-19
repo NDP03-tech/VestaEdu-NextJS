@@ -1,17 +1,108 @@
-import { Repository } from "typeorm";
+import { DataSource, IsNull, Repository } from "typeorm";
 import { UserQuizResultEntity } from "../../domain/entities";
 import { userQuizResultRepository } from "../../domain/repositories/user-quiz-result.repository.interface";
 import { UserQuizResult } from "../persistence/UserQuizResult";
 import { UserQuizResultMapper } from "../mapper/user-quiz-result.mapper";
+import { AttemptCounter } from "../persistence/AttemptCounter";
+import { AttemptCounterMapper } from "../mapper/attempt-counter.mapper";
+import { Quiz } from "../persistence/Quiz";
+import { QuizMapper } from "../mapper/quiz.mapper";
 import { TypeOrmCrudRepository } from "./typeorm-crud.repository";
-import { AttemptQueryRepository } from "../../applications/UserQuizResult Use-case/user-quiz-result.specialized.use-case.interface";
+import type {
+  AttemptQueryRepository,
+  AttemptStartRepository,
+  AttemptStartTransaction,
+} from "../../applications/UserQuizResult Use-case/user-quiz-result.specialized.use-case.interface";
 
 export class UserQuizResultRepository
   extends TypeOrmCrudRepository<UserQuizResultEntity, UserQuizResult>
-  implements userQuizResultRepository, AttemptQueryRepository
+  implements
+    userQuizResultRepository,
+    AttemptQueryRepository,
+    AttemptStartRepository
 {
-  constructor(repository: Repository<UserQuizResult>) {
+  constructor(
+    repository: Repository<UserQuizResult>,
+    private readonly dataSource: DataSource,
+  ) {
     super(repository, UserQuizResultMapper);
+  }
+
+  async withUserQuizStartLock<T>(
+    userId: number,
+    quizId: number,
+    operation: (transaction: AttemptStartTransaction) => Promise<T>,
+  ): Promise<T> {
+    return this.dataSource.transaction(async (manager) => {
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(AttemptCounter)
+        .values({ user_id: userId, quiz_id: quizId, count: 0 })
+        .orIgnore()
+        .execute();
+
+      const counterRow = await manager.findOne(AttemptCounter, {
+        where: { user_id: userId, quiz_id: quizId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!counterRow) {
+        throw new Error(
+          `Attempt counter for user ${userId} and quiz ${quizId} could not be locked`,
+        );
+      }
+
+      const counter = AttemptCounterMapper.toDomain(counterRow);
+      const transaction: AttemptStartTransaction = {
+        counter,
+        getQuiz: async () => {
+          const quiz = await manager.findOne(Quiz, {
+            where: { id: quizId },
+            lock: { mode: "pessimistic_read" },
+          });
+          return quiz ? QuizMapper.toDomain(quiz) : null;
+        },
+        getUnsubmittedAttempt: async () => {
+          const result = await manager.findOne(UserQuizResult, {
+            where: {
+              user_id: userId,
+              quiz_id: quizId,
+              submittedAt: IsNull(),
+            },
+            order: { createdAt: "DESC" },
+            lock: { mode: "pessimistic_write" },
+          });
+          return result ? UserQuizResultMapper.toDomain(result) : null;
+        },
+        hasPassedAttempt: async () =>
+          (await manager.count(UserQuizResult, {
+            where: { user_id: userId, quiz_id: quizId, passed: true },
+          })) > 0,
+        saveCounter: async () => {
+          await manager.save(
+            AttemptCounter,
+            AttemptCounterMapper.toPersistence(counter),
+          );
+        },
+        createAttempt: async (result) => {
+          const persistence = UserQuizResultMapper.toPersistence(result);
+          Reflect.deleteProperty(persistence, "id");
+          const saved = await manager.save(
+            UserQuizResult,
+            persistence,
+          );
+          return UserQuizResultMapper.toDomain(saved);
+        },
+        updateAttempt: async (result) => {
+          await manager.save(
+            UserQuizResult,
+            UserQuizResultMapper.toPersistence(result),
+          );
+        },
+      };
+
+      return operation(transaction);
+    });
   }
 
   async countAttempts(userId: number, quizId: number): Promise<number> {

@@ -378,8 +378,6 @@ export function createWorkflowControllers() {
     startAttempt: async (request) => {
       const result = await new StartAttemptUseCase(
         repositories.results,
-        repositories.results,
-        repositories.attempts,
         attemptQueries,
       ).execute(
         Number((request.user as { id?: number })?.id),
