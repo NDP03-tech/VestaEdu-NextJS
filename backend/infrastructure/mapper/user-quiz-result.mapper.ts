@@ -12,6 +12,7 @@ export class UserQuizResultMapper {
       attemptNumber: orm.attemptNumber,
       quizVersion: orm.quiz_version ?? null,
       deadline: orm.deadline ?? null,
+      submittedLate: orm.submitted_late ?? false,
       state: orm.state ?? {},
       answers,
       score: orm.score,
@@ -34,6 +35,7 @@ export class UserQuizResultMapper {
     orm.attemptNumber = result.attemptNumber;
     orm.quiz_version = result.quizVersion;
     orm.deadline = result.deadline;
+    orm.submitted_late = result.submittedLate;
     orm.state = result.state;
     orm.answers = result.answers;
     orm.score = result.score;

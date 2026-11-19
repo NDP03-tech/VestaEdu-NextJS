@@ -375,8 +375,8 @@ export function createWorkflowControllers() {
       repositories.questions.getByQuizId(String(quizId)),
   };
   const resultController = new UserQuizResultController({
-    startAttempt: (request) =>
-      new StartAttemptUseCase(
+    startAttempt: async (request) => {
+      const result = await new StartAttemptUseCase(
         repositories.results,
         repositories.results,
         repositories.attempts,
@@ -384,13 +384,18 @@ export function createWorkflowControllers() {
       ).execute(
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
-      ),
+      );
+      return { ...result.toJSON(), serverNow: new Date() };
+    },
     tempSave: (request) => {
       const body = (request.body ?? {}) as {
         answers?: RawAnswerInput[];
         state?: Record<string, unknown>;
       };
-      return new TempSaveAttemptUseCase(repositories.results).execute(
+      return new TempSaveAttemptUseCase(
+        repositories.results,
+        attemptQueries,
+      ).execute(
         request.params.resultId ?? "",
         Number((request.user as { id?: number })?.id),
         body.answers ?? [],
@@ -405,11 +410,18 @@ export function createWorkflowControllers() {
         body.answers ?? [],
       );
     },
-    getLatestResult: (request) =>
-      new GetLatestAttemptUseCase(repositories.results).execute(
+    getLatestResult: async (request) => {
+      const result = await new GetLatestAttemptUseCase(
+        repositories.results,
+        attemptQueries,
+      ).execute(
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
-      ),
+      );
+      return result
+        ? { ...result.toJSON(), serverNow: new Date() }
+        : null;
+    },
     getAllAttempts: (request) =>
       new GetAllAttemptsUseCase(repositories.results).execute(
         Number((request.user as { id?: number })?.id),

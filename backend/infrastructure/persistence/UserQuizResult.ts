@@ -61,6 +61,9 @@ export class UserQuizResult {
   @Column({ type: "timestamp", nullable: true })
   deadline!: Date | null;
 
+  @Column({ name: "submitted_late", type: "boolean", default: false })
+  submitted_late!: boolean;
+
   @Column({
     type: "jsonb",
     nullable: false,

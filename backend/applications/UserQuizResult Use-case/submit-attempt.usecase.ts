@@ -6,6 +6,8 @@ import type {
 } from "./user-quiz-result.specialized.use-case.interface";
 import { normalizeEntityId } from "../use-case.helpers";
 import { AttemptOwnershipError } from "./user-quiz-result.exceptions";
+import { isPastAttemptDeadline } from "./attempt-deadline.helpers";
+
 export class SubmitAttemptUseCase {
   constructor(
     private readonly results: userQuizResultRepository,
@@ -22,10 +24,14 @@ export class SubmitAttemptUseCase {
     if (result.userId !== userId) throw new AttemptOwnershipError();
     const quiz = await this.queries.getQuiz(result.quizId);
     if (!quiz) throw new Error(`Quiz ${result.quizId} not found`);
+    const submittedLate =
+      quiz.uiSettings.mode === "exam" &&
+      isPastAttemptDeadline(result.deadline);
     result.submit(
       await this.queries.getQuestions(result.quizId),
-      answers,
+      submittedLate ? result.answers : answers,
       quiz.passingScore,
+      submittedLate,
     );
     await this.results.update(key, result);
     return result;

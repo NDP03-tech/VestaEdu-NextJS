@@ -45,4 +45,58 @@ describe("SubmitAttemptUseCase", () => {
     expect(queries.getQuiz).not.toHaveBeenCalled();
     expect(results.update).not.toHaveBeenCalled();
   });
+
+  it("submits only autosaved answers after an exam deadline grace period", async () => {
+    const result = UserQuizResultEntity.create({
+      userId: 3,
+      quizId: 8,
+      attemptNumber: 1,
+      deadline: new Date(Date.now() - 31_000),
+    });
+    result.tempSave([{ questionId: 11, answer: "saved" }]);
+    const results = {
+      getById: jest.fn().mockResolvedValue(result),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const queries = {
+      getQuiz: jest
+        .fn()
+        .mockResolvedValue(QuizEntity.create({ uiSettings: { mode: "exam" } })),
+      getQuestions: jest.fn().mockResolvedValue([]),
+    };
+    const useCase = new SubmitAttemptUseCase(results as never, queries);
+
+    const submitted = await useCase.execute("17", 3, [
+      { questionId: 11, answer: "late" },
+    ]);
+
+    expect(submitted.submittedLate).toBe(true);
+    expect(submitted.answers[0].answer).toBe("saved");
+    expect(results.update).toHaveBeenCalledWith("17", result);
+  });
+
+  it("allows a practice attempt to submit after its deadline", async () => {
+    const result = UserQuizResultEntity.create({
+      userId: 3,
+      quizId: 8,
+      attemptNumber: 1,
+      deadline: new Date(Date.now() - 31_000),
+    });
+    const results = {
+      getById: jest.fn().mockResolvedValue(result),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const queries = {
+      getQuiz: jest.fn().mockResolvedValue(QuizEntity.create()),
+      getQuestions: jest.fn().mockResolvedValue([]),
+    };
+    const useCase = new SubmitAttemptUseCase(results as never, queries);
+
+    const submitted = await useCase.execute("17", 3, [
+      { questionId: 11, answer: "practice answer" },
+    ]);
+
+    expect(submitted.submittedLate).toBe(false);
+    expect(submitted.answers[0].answer).toBe("practice answer");
+  });
 });

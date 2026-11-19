@@ -23,9 +23,11 @@ describe("UserQuizResultMapper attempt metadata", () => {
 
     expect(persisted.quiz_version).toBe(3);
     expect(persisted.deadline).toEqual(deadline);
+    expect(persisted.submitted_late).toBe(false);
     expect(persisted.state).toEqual({ currentQuestionId: 15 });
     expect(restored.quizVersion).toBe(3);
     expect(restored.deadline).toEqual(deadline);
+    expect(restored.submittedLate).toBe(false);
     expect(restored.state).toEqual({ currentQuestionId: 15 });
   });
 });

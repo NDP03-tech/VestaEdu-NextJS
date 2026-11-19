@@ -1,20 +1,46 @@
 import type { userQuizResultRepository } from "../../domain/repositories/user-quiz-result.repository.interface";
-import type { RawAttemptAnswer } from "./user-quiz-result.specialized.use-case.interface";
+import type {
+  AttemptDomainQueries,
+  RawAttemptAnswer,
+} from "./user-quiz-result.specialized.use-case.interface";
 import { normalizeEntityId } from "../use-case.helpers";
 import { AttemptOwnershipError } from "./user-quiz-result.exceptions";
+import type { UserQuizResultEntity } from "../../domain/entities";
+import { isPastAttemptDeadline } from "./attempt-deadline.helpers";
+
 export class TempSaveAttemptUseCase {
-  constructor(private readonly repository: userQuizResultRepository) {}
+  constructor(
+    private readonly repository: userQuizResultRepository,
+    private readonly queries: AttemptDomainQueries,
+  ) {}
   async execute(
     resultId: string | number,
     userId: number,
     answers: RawAttemptAnswer[],
     state?: Record<string, unknown>,
-  ): Promise<void> {
+  ): Promise<UserQuizResultEntity> {
     const key = normalizeEntityId(resultId, "UserQuizResult");
     const result = await this.repository.getById(key);
     if (!result) throw new Error(`UserQuizResult ${key} not found`);
     if (result.userId !== userId) throw new AttemptOwnershipError();
+
+    if (isPastAttemptDeadline(result.deadline)) {
+      const quiz = await this.queries.getQuiz(result.quizId);
+      if (!quiz) throw new Error(`Quiz ${result.quizId} not found`);
+      if (quiz.uiSettings.mode === "exam") {
+        result.submit(
+          await this.queries.getQuestions(result.quizId),
+          result.answers,
+          quiz.passingScore,
+          true,
+        );
+        await this.repository.update(key, result);
+        return result;
+      }
+    }
+
     result.tempSave(answers, state);
     await this.repository.update(key, result);
+    return result;
   }
 }

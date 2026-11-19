@@ -13,6 +13,7 @@ import { AttemptCounter } from "./AttemptCounter";
 import { ClassQuiz } from "./ClassQuiz";
 
 export interface QuizUiSettings {
+  mode: "practice" | "exam";
   oneQuestionPerPage: boolean;
   showQuestionNumbers: boolean;
   shuffle: string;
@@ -30,6 +31,7 @@ export interface QuizUiSettings {
 }
 
 const DEFAULT_UI_SETTINGS: QuizUiSettings = {
+  mode: "practice",
   oneQuestionPerPage: false,
   showQuestionNumbers: true,
   shuffle: "none",

@@ -26,6 +26,7 @@ interface UserQuizResultProps {
   attemptNumber: number;
   quizVersion: number | null;
   deadline: Date | null;
+  submittedLate?: boolean;
   state: Record<string, unknown>;
   /**
    * ⚠️  Nguồn chân lý cho attempt là AttemptCounterEntity (xem {@link AttemptCounterEntity}).
@@ -68,6 +69,7 @@ export class UserQuizResultEntity {
       attemptNumber: input.attemptNumber,
       quizVersion: input.quizVersion ?? null,
       deadline: input.deadline ?? null,
+      submittedLate: false,
       state: input.state ?? {},
       answers: [],
       score: 0,
@@ -102,6 +104,9 @@ export class UserQuizResultEntity {
   }
   get deadline() {
     return this.props.deadline;
+  }
+  get submittedLate(): boolean {
+    return this.props.submittedLate ?? false;
   }
   get state(): Record<string, unknown> {
     return { ...this.props.state };
@@ -170,6 +175,7 @@ export class UserQuizResultEntity {
     questions: QuestionEntity[],
     rawAnswers: RawAnswerInput[],
     passingScore: number,
+    submittedLate = false,
   ): void {
     if (this.isSubmitted()) {
       throw new Error("This attempt has already been submitted");
@@ -219,6 +225,7 @@ export class UserQuizResultEntity {
     this.props.score = finalScore;
     this.props.passed = finalScore >= passingScore;
     this.props.needsManualGrading = needsManual;
+    this.props.submittedLate = submittedLate;
     this.props.submittedAt = new Date();
     this.touch();
   }
@@ -273,6 +280,6 @@ export class UserQuizResultEntity {
   }
 
   toJSON(): UserQuizResultProps {
-    return { ...this.props };
+    return { ...this.props, submittedLate: this.submittedLate };
   }
 }

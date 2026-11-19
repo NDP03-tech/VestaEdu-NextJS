@@ -1,4 +1,4 @@
-import { UserQuizResultEntity } from "../../../domain/entities";
+import { QuizEntity, UserQuizResultEntity } from "../../../domain/entities";
 import { TempSaveAttemptUseCase } from "../temp-save-attempt.usecase";
 
 describe("TempSaveAttemptUseCase", () => {
@@ -12,9 +12,13 @@ describe("TempSaveAttemptUseCase", () => {
       getById: jest.fn().mockResolvedValue(result),
       update: jest.fn().mockResolvedValue(undefined),
     };
-    const useCase = new TempSaveAttemptUseCase(repository as never);
+    const queries = {
+      getQuiz: jest.fn(),
+      getQuestions: jest.fn(),
+    };
+    const useCase = new TempSaveAttemptUseCase(repository as never, queries);
 
-    await expect(useCase.execute("17", 3, [])).resolves.toBeUndefined();
+    await expect(useCase.execute("17", 3, [])).resolves.toBe(result);
     expect(repository.update).toHaveBeenCalledWith("17", result);
   });
 
@@ -28,11 +32,45 @@ describe("TempSaveAttemptUseCase", () => {
       getById: jest.fn().mockResolvedValue(result),
       update: jest.fn(),
     };
-    const useCase = new TempSaveAttemptUseCase(repository as never);
+    const queries = {
+      getQuiz: jest.fn(),
+      getQuestions: jest.fn(),
+    };
+    const useCase = new TempSaveAttemptUseCase(repository as never, queries);
 
     await expect(useCase.execute("17", 4, [])).rejects.toMatchObject({
       statusCode: 403,
     });
     expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it("auto-submits saved answers after an exam deadline and ignores new answers", async () => {
+    const result = UserQuizResultEntity.create({
+      userId: 3,
+      quizId: 8,
+      attemptNumber: 1,
+      deadline: new Date(Date.now() - 31_000),
+    });
+    result.tempSave([{ questionId: 11, answer: "saved" }]);
+    const repository = {
+      getById: jest.fn().mockResolvedValue(result),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const queries = {
+      getQuiz: jest
+        .fn()
+        .mockResolvedValue(QuizEntity.create({ uiSettings: { mode: "exam" } })),
+      getQuestions: jest.fn().mockResolvedValue([]),
+    };
+    const useCase = new TempSaveAttemptUseCase(repository as never, queries);
+
+    const submitted = await useCase.execute("17", 3, [
+      { questionId: 11, answer: "late" },
+    ]);
+
+    expect(submitted.submittedAt).not.toBeNull();
+    expect(submitted.submittedLate).toBe(true);
+    expect(submitted.answers[0].answer).toBe("saved");
+    expect(repository.update).toHaveBeenCalledWith("17", result);
   });
 });
