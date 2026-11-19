@@ -250,6 +250,8 @@ const QuizPreviewWrapper = () => {
         onSubmit={handleSubmit}
         timeLimit={ui.timeLimit || 0}
         initialAnswers={answers}
+        uiSettings={ui}
+        resultId={result?.id ?? quizId}
       />
     </div>
   );

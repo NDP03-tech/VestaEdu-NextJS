@@ -361,6 +361,7 @@ const QuizPreviewWrapper = () => {
         showCorrectAnswer={true}
         initialAnswers={initialAnswersMap}
         uiSettings={quiz.uiSettings || {}}
+        resultId={quizId}
         correctAnswers={correctAnswersArray}
       />
     );
@@ -448,6 +449,7 @@ const QuizPreviewWrapper = () => {
         showCorrectAnswer={quiz.visibleTo === "everyone_record" || hasSubmitted}
         initialAnswers={answers}
         uiSettings={ui}
+        resultId={result?.id ?? quizId}
         scoreAfterSubmit={scoreAfterSubmit}
         correctAnswers={(result?.result || result)?.correctAnswers || []}
       />

@@ -1,12 +1,27 @@
 import { prepareShuffledQuestions } from "./quizShuffle";
 
 describe("prepareShuffledQuestions", () => {
-  test("shuffles question order without mutating source questions", () => {
-    const questions = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  test("uses a stable, attempt-specific question order without mutating sources", () => {
+    const questions = Array.from({ length: 8 }, (_, id) => ({ id }));
+    const firstAttempt = prepareShuffledQuestions(
+      questions,
+      "questions",
+      "attempt-a",
+    ).map((question) => question.id);
+    const sameAttempt = prepareShuffledQuestions(
+      questions,
+      "questions",
+      "attempt-a",
+    ).map((question) => question.id);
+    const otherAttempt = prepareShuffledQuestions(
+      questions,
+      "questions",
+      "attempt-b",
+    ).map((question) => question.id);
 
-    expect(prepareShuffledQuestions(questions, "questions", () => 0).map((q) => q.id))
-      .toEqual([2, 3, 1]);
-    expect(questions.map((q) => q.id)).toEqual([1, 2, 3]);
+    expect(sameAttempt).toEqual(firstAttempt);
+    expect(otherAttempt).not.toEqual(firstAttempt);
+    expect(questions.map((q) => q.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   test("shuffles displayed answers but keeps their original grading indices", () => {
@@ -18,17 +33,22 @@ describe("prepareShuffledQuestions", () => {
     const [displayQuestion] = prepareShuffledQuestions(
       [question],
       "answers",
-      () => 0,
+      "attempt-a",
     );
 
-    expect(displayQuestion.options.map((option) => option.text)).toEqual([
+    expect(displayQuestion.options).toEqual(
+      prepareShuffledQuestions([question], "answers", "attempt-a")[0].options,
+    );
+    expect(displayQuestion.options.map((option) => option.text)).not.toEqual([
+      "A",
       "B",
       "C",
-      "A",
     ]);
-    expect(
-      displayQuestion.options.map((option) => option.answerIndex),
-    ).toEqual([1, 2, 0]);
+    expect(displayQuestion.options.map((option) => option.answerIndex)).toEqual(
+      displayQuestion.options.map((option) =>
+        question.options.findIndex((original) => original.text === option.text),
+      ),
+    );
     expect(question.options[0]).toEqual({ text: "A" });
   });
 
@@ -38,8 +58,6 @@ describe("prepareShuffledQuestions", () => {
       { id: 2, options: [] },
     ];
 
-    expect(prepareShuffledQuestions(questions, "none", () => 0)).toEqual(
-      questions,
-    );
+    expect(prepareShuffledQuestions(questions, "none", "attempt-a")).toEqual(questions);
   });
 });

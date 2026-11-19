@@ -18,6 +18,7 @@ const QuizRunner = ({
   scoreAfterSubmit,
   initialAnswers = {},
   uiSettings = {},
+  resultId = "",
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(
@@ -26,15 +27,15 @@ const QuizRunner = ({
   const [frozenAnswers, setFrozenAnswers] = useState(null);
   const showQuestionNumbers = uiSettings.showQuestionNumbers ?? true;
   const displayedQuestions = useMemo(
-    () => prepareShuffledQuestions(questions, uiSettings.shuffle),
-    [questions, uiSettings.shuffle],
+    () => prepareShuffledQuestions(questions, uiSettings.shuffle, resultId),
+    [questions, uiSettings.shuffle, resultId],
   );
 
   useEffect(() => {
     setCurrentIndex(0);
     setSecondsLeft(timeLimit ? timeLimit * 60 : 0);
     setFrozenAnswers(null);
-  }, [questions, timeLimit, uiSettings.shuffle]);
+  }, [questions, timeLimit, uiSettings.shuffle, resultId]);
 
   useEffect(() => {
     if (!timeLimit) return;
