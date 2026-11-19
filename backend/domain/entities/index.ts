@@ -22,7 +22,9 @@ export type { UserRole } from "./user.entity";
 export { CourseEntity } from "./course.entity";
 export { EventEntity } from "./event.entity";
 export {
+  isQuizStatus,
   QuizEntity,
+  type QuizStatus,
   type QuizVisibility,
   type QuizUiSettings,
 } from "./quiz.entity";

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  VersionColumn,
   OneToMany,
 } from "typeorm";
 import { Question } from "./Question";
@@ -66,6 +67,12 @@ export class Quiz {
 
   @Column({ name: "passingScore", type: "int", default: 90 })
   passingScore!: number;
+
+  @Column({ type: "varchar", length: 20, default: "published" })
+  status!: string;
+
+  @VersionColumn({ type: "int", default: 1 })
+  version!: number;
 
   @Column({ name: "uiSettings", type: "jsonb", nullable: true })
   uiSettings: QuizUiSettings | null = DEFAULT_UI_SETTINGS;

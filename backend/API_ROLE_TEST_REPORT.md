@@ -1,16 +1,16 @@
 # API, Role And Test Report
 
-Date: 2026-09-17
+Date: 2026-11-18
 Project: VestaEdu-NextJS/backend
 
 ## Executive Summary
 
 - TypeScript typecheck: PASS
 - TypeScript build: PASS
-- Automated test suite: NOT AVAILABLE (`npm test` exits because package.json contains `echo "Error: no test specified" && exit 1`)
+- Mock API route suite: 100/107 pass; the focused question-by-quiz route tests pass 4/4
 - Runtime/API smoke test: STARTUP PASS for the TypeORM entrypoint; the process stayed alive and was stopped after verification.
 - The old `MODULE_NOT_FOUND` startup failure is removed: `index.js` now delegates to `dist/index.js`, which initializes the TypeORM composition root.
-- HTTP endpoint assertions still require a running PostgreSQL instance with the configured schema.
+- Live HTTP assertions against the TypeORM entrypoint still require PostgreSQL with the configured schema.
 
 ## Role Rules
 
@@ -86,14 +86,14 @@ Legend: `Public` means no token; `Auth` means token required; `Auth: roles` mean
 
 ### Question API (`/api/questions`)
 
-All routes currently require `Auth: admin, teacher`.
+Question authoring routes require `Auth: admin, teacher`. The by-quiz read route also allows authenticated students and returns a student-safe projection without answer keys.
 
 | Method | Path                             | Access               | Result                           |
 | ------ | -------------------------------- | -------------------- | -------------------------------- |
 | POST   | `/api/questions`                 | Auth: admin, teacher | Not live-tested: startup blocked |
 | PUT    | `/api/questions/:id`             | Auth: admin, teacher | Not live-tested: startup blocked |
 | DELETE | `/api/questions/:id`             | Auth: admin, teacher | Not live-tested: startup blocked |
-| GET    | `/api/questions/by-quiz/:quizId` | Auth: admin, teacher | Not live-tested: startup blocked |
+| GET    | `/api/questions/by-quiz/:quizId` | Auth: admin, teacher, student | Mock route tests pass; live DB not tested |
 | GET    | `/api/questions/:id`             | Auth: admin, teacher | Not live-tested: startup blocked |
 | GET    | `/api/questions`                 | Auth: admin, teacher | Not live-tested: startup blocked |
 

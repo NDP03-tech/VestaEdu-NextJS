@@ -55,6 +55,19 @@ export class UserQuizResult {
   @Column({ name: "attemptNumber", type: "int", default: 1 })
   attemptNumber!: number;
 
+  @Column({ name: "quiz_version", type: "int", nullable: true })
+  quiz_version!: number | null;
+
+  @Column({ type: "timestamp", nullable: true })
+  deadline!: Date | null;
+
+  @Column({
+    type: "jsonb",
+    nullable: false,
+    default: () => "'{}'::jsonb",
+  })
+  state!: Record<string, unknown>;
+
   @CreateDateColumn({ name: "createdAt" })
   createdAt!: Date;
 

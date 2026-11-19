@@ -13,3 +13,11 @@ export { DeleteQuizUseCase } from "./delete-quiz.usecase";
 export * from "./quiz.specialized.use-case.interface";
 export { GetQuizzesByCategoryUseCase } from "./get-quizzes-by-category.usecase";
 export { DeleteQuizWithQuestionsUseCase } from "./delete-quiz-with-questions.usecase";
+export {
+  InputValidationError,
+  QuizNotPublishedError,
+  QuizVersionConflictError,
+  SaveQuizContentsUseCase,
+  type SaveQuizContentsInput,
+  type SaveQuizContentsRepository,
+} from "./save-quiz-contents.usecase";

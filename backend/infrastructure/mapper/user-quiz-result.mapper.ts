@@ -10,6 +10,9 @@ export class UserQuizResultMapper {
       userId: orm.user_id,
       quizId: orm.quiz_id,
       attemptNumber: orm.attemptNumber,
+      quizVersion: orm.quiz_version ?? null,
+      deadline: orm.deadline ?? null,
+      state: orm.state ?? {},
       answers,
       score: orm.score,
       passed: orm.passed,
@@ -29,6 +32,9 @@ export class UserQuizResultMapper {
     orm.user_id = result.userId;
     orm.quiz_id = result.quizId;
     orm.attemptNumber = result.attemptNumber;
+    orm.quiz_version = result.quizVersion;
+    orm.deadline = result.deadline;
+    orm.state = result.state;
     orm.answers = result.answers;
     orm.score = result.score;
     orm.passed = result.passed;

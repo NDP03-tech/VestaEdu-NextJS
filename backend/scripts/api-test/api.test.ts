@@ -7,9 +7,11 @@
  */
 import request from "supertest";
 import { buildTestApp, makeToken } from "./__mocks__/app.factory";
+import { QuizEntity } from "../../domain/entities";
+import { QuizVersionConflictError } from "../../applications/Quiz Use-case";
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
-const { app } = buildTestApp();
+const { app, quizContentsUseCase, repos } = buildTestApp();
 
 const adminToken   = makeToken("admin");
 const teacherToken = makeToken("teacher");
@@ -276,6 +278,7 @@ describe("Quiz API", () => {
     const res = await request(app).post("/api/quizzes")
       .set(auth(teacherToken)).send({ title: "Quiz X", category: "English" });
     expect(res.status).toBe(201);
+    expect(res.body.data).toMatchObject({ id: 2, version: 1 });
   });
 
   test("POST /api/quizzes — no token → 401", async () => {
@@ -285,8 +288,59 @@ describe("Quiz API", () => {
 
   test("PUT /api/quizzes/1 — admin → 200", async () => {
     const res = await request(app).put("/api/quizzes/1")
-      .set(auth(adminToken)).send({ title: "Updated" });
+      .set(auth(adminToken)).send({ title: "Updated", version: 1 });
     expect(res.status).toBe(200);
+  });
+
+  test("PUT /api/quizzes/1/contents — teacher saves quiz and duplicate-stem questions", async () => {
+    const body = {
+      quiz: { title: "Updated", version: 1 },
+      questions: [
+        { questionType: "essay", questionText: "Repeat this stem" },
+        { questionType: "essay", questionText: "Repeat this stem" },
+      ],
+      deletedQuestionIds: [],
+    };
+    const res = await request(app)
+      .put("/api/quizzes/1/contents")
+      .set(auth(teacherToken))
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.quiz.title).toBe("Saved quiz");
+    expect(quizContentsUseCase.execute).toHaveBeenCalledWith("1", body);
+  });
+
+  test("PUT /api/quizzes/1/contents requires teacher or admin auth", async () => {
+    const body = { quiz: {}, questions: [], deletedQuestionIds: [] };
+    const unauthenticated = await request(app)
+      .put("/api/quizzes/1/contents")
+      .send(body);
+    const student = await request(app)
+      .put("/api/quizzes/1/contents")
+      .set(auth(studentToken))
+      .send(body);
+
+    expect(unauthenticated.status).toBe(401);
+    expect(student.status).toBe(403);
+  });
+
+  test("PUT /api/quizzes/1/contents returns 409 for a stale quiz version", async () => {
+    quizContentsUseCase.execute.mockRejectedValueOnce(
+      new QuizVersionConflictError("Reload the quiz"),
+    );
+
+    const res = await request(app)
+      .put("/api/quizzes/1/contents")
+      .set(auth(teacherToken))
+      .send({
+        quiz: { version: 1 },
+        questions: [],
+        deletedQuestionIds: [],
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("Reload the quiz");
   });
 
   test("DELETE /api/quizzes/1 — admin → 204", async () => {
@@ -299,6 +353,79 @@ describe("Quiz API", () => {
 // 7. QUESTION API
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Question API", () => {
+  test("GET /api/questions/by-quiz/1 — requires authentication", async () => {
+    const res = await request(app).get("/api/questions/by-quiz/1");
+
+    expect(res.status).toBe(401);
+  });
+
+  test("GET /api/questions/by-quiz/1 — student receives no answer key", async () => {
+    const res = await request(app)
+      .get("/api/questions/by-quiz/1")
+      .set(auth(studentToken));
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0]).toMatchObject({
+      id: 1,
+      questionType: "multiple-choice",
+      question_type: "multiple-choice",
+      options: [{ text: "four" }, { text: "five" }],
+      studentSafe: true,
+    });
+    expect(res.body.data[0].questionText).not.toMatch(/data-(?:correct-)?answers?\s*=/i);
+    expect(res.body.data[0]).not.toHaveProperty("correctAnswer");
+    expect(res.body.data[0]).not.toHaveProperty("explanation");
+    expect(res.body.data[0]).not.toHaveProperty("answerBlueprint");
+    expect(res.body.data[0].gaps[0]).not.toHaveProperty("correctAnswers");
+    expect(res.body.data[0].dropdowns[0]).not.toHaveProperty("correctAnswer");
+    expect(res.body.data[0].hintWords[0]).not.toHaveProperty("word");
+    expect(res.body.data[0].highlights[0]).not.toHaveProperty("correctAnswers");
+    expect(res.body.data[0].options[0]).not.toHaveProperty("isCorrect");
+  });
+
+  test("GET /api/questions/by-quiz/1 — student cannot access a draft quiz", async () => {
+    repos.quizRepo.getById.mockResolvedValueOnce(
+      QuizEntity.reconstitute({
+        id: 1,
+        title: "Draft quiz",
+        category: "English",
+        visibleTo: "everyone",
+        status: "draft",
+        version: 1,
+        uiSettings: QuizEntity.defaultUiSettings,
+        passingScore: 90,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+    );
+
+    const res = await request(app)
+      .get("/api/questions/by-quiz/1")
+      .set(auth(studentToken));
+
+    expect(res.status).toBe(404);
+    expect(res.body.data).toBeUndefined();
+  });
+
+  test("GET /api/questions/by-quiz/1 — teacher receives authoring data", async () => {
+    const res = await request(app)
+      .get("/api/questions/by-quiz/1")
+      .set(auth(teacherToken));
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].correctAnswer).toBe("four");
+    expect(res.body.data[0].options[0].isCorrect).toBe(true);
+  });
+
+  test("GET /api/questions/by-quiz/invalid — rejects invalid quiz IDs", async () => {
+    const res = await request(app)
+      .get("/api/questions/by-quiz/invalid")
+      .set(auth(studentToken));
+
+    expect(res.status).toBe(400);
+  });
+
   test("GET /api/questions — admin → 200", async () => {
     const res = await request(app).get("/api/questions").set(auth(adminToken));
     expect(res.status).toBe(200);

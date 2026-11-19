@@ -3,6 +3,7 @@ import QuestionRenderer from "../QuestionRenderer";
 import { Button } from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
 import { Badge } from "../ui/Badge";
+import { prepareShuffledQuestions } from "./quizShuffle";
 
 const QuizRunner = ({
   questions = [],
@@ -24,12 +25,16 @@ const QuizRunner = ({
   );
   const [frozenAnswers, setFrozenAnswers] = useState(null);
   const showQuestionNumbers = uiSettings.showQuestionNumbers ?? true;
+  const displayedQuestions = useMemo(
+    () => prepareShuffledQuestions(questions, uiSettings.shuffle),
+    [questions, uiSettings.shuffle],
+  );
 
   useEffect(() => {
     setCurrentIndex(0);
     setSecondsLeft(timeLimit ? timeLimit * 60 : 0);
     setFrozenAnswers(null);
-  }, [questions, timeLimit]);
+  }, [questions, timeLimit, uiSettings.shuffle]);
 
   useEffect(() => {
     if (!timeLimit) return;
@@ -51,7 +56,8 @@ const QuizRunner = ({
   const normalizedAnswers = useMemo(() => {
     if (Array.isArray(initialAnswers)) {
       return initialAnswers.reduce((acc, curr) => {
-        acc[curr.question] = curr.answer;
+        const questionId = curr?.questionId ?? curr?.question;
+        if (questionId != null) acc[questionId] = curr.answer;
         return acc;
       }, {});
     }
@@ -130,7 +136,7 @@ const QuizRunner = ({
     }
   };
 
-  const shouldShowOnePerPage = onePerPage && questions.length > 1;
+  const shouldShowOnePerPage = onePerPage && displayedQuestions.length > 1;
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16">
@@ -172,7 +178,7 @@ const QuizRunner = ({
             <div
               className="bg-blue-600 h-1 transition-all duration-300"
               style={{
-                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                width: `${((currentIndex + 1) / displayedQuestions.length) * 100}%`,
               }}
             />
           </div>
@@ -204,20 +210,22 @@ const QuizRunner = ({
               {showQuestionNumbers && (
                 <CardHeader className="bg-slate-50/50 py-3.5 px-6 flex items-center justify-between border-b border-slate-100">
                   <Badge variant="primary" size="md">
-                    Câu hỏi {currentIndex + 1} / {questions.length}
+                    Câu hỏi {currentIndex + 1} / {displayedQuestions.length}
                   </Badge>
                 </CardHeader>
               )}
               <CardBody className="p-6 sm:p-8">
                 <QuestionRenderer
-                  key={questions[currentIndex]?.id}
-                  question={questions[currentIndex]}
+                  key={displayedQuestions[currentIndex]?.id}
+                  question={displayedQuestions[currentIndex]}
                   showCorrectAnswer={showCorrectAnswer || hasSubmitted}
                   hasSubmitted={hasSubmitted}
-                  frozenAnswer={frozenAnswers?.[questions[currentIndex]?.id]}
+                  frozenAnswer={
+                    frozenAnswers?.[displayedQuestions[currentIndex]?.id]
+                  }
                   correctAnswers={correctAnswers}
                   initialAnswer={getInitialAnswerForQuestion(
-                    questions[currentIndex]
+                    displayedQuestions[currentIndex]
                   )}
                   onAnswerChange={(questionId, answer) =>
                     onAnswerChange(questionId, answer)
@@ -238,12 +246,12 @@ const QuizRunner = ({
                 ← Câu trước
               </Button>
 
-              {currentIndex < questions.length - 1 ? (
+              {currentIndex < displayedQuestions.length - 1 ? (
                 <Button
                   variant="primary"
                   onClick={() =>
                     setCurrentIndex((prev) =>
-                      Math.min(questions.length - 1, prev + 1)
+                      Math.min(displayedQuestions.length - 1, prev + 1)
                     )
                   }
                   className="gap-2 px-6 rounded-xl shadow-md shadow-blue-500/20"
@@ -264,7 +272,7 @@ const QuizRunner = ({
         ) : (
           /* All questions in one scrollable page */
           <div className="space-y-6">
-            {questions.map((q, index) => (
+            {displayedQuestions.map((q, index) => (
               <Card
                 key={q.id || index}
                 className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white"

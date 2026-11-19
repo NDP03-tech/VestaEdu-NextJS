@@ -159,6 +159,59 @@ export const swaggerDocument = {
         responses: { "200": { description: "List of quizzes" } },
       },
     },
+    "/api/quizzes/{quizId}/contents": {
+      put: {
+        summary: "Save quiz metadata and question changes atomically (Admin/Teacher)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "quizId",
+            in: "path",
+            required: true,
+            schema: { type: "integer", minimum: 1 },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["quiz", "questions"],
+                properties: {
+                  quiz: {
+                    type: "object",
+                    required: ["version"],
+                    properties: {
+                      title: { type: "string" },
+                      status: {
+                        type: "string",
+                        enum: ["draft", "published", "archived"],
+                      },
+                      version: { type: "integer", minimum: 1 },
+                    },
+                  },
+                  questions: {
+                    type: "array",
+                    items: { type: "object" },
+                    description: "Changed/new questions in display order; duplicate text is allowed.",
+                  },
+                  deletedQuestionIds: {
+                    type: "array",
+                    items: { type: "integer", minimum: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Quiz and all questions after the save" },
+          "400": { description: "Invalid quiz or question data" },
+          "404": { description: "Quiz or question not found" },
+        },
+      },
+    },
     "/api/classes": {
       get: {
         summary: "Get all classes (Admin/Teacher)",

@@ -12,8 +12,9 @@ const QuizEditPage = () => {
     const fetchQuiz = async () => {
       try {
         const res = await axios.get(`${config.API_URL}/api/quizzes/${quizId}`);
-        setQuiz(res.data);
-        setForm({ title: res.data.title, description: res.data.description });
+        const quizData = res.data?.data ?? res.data;
+        setQuiz(quizData);
+        setForm({ title: quizData.title, description: quizData.description });
       } catch (err) {
         console.error("Lỗi khi tải quiz", err);
       }
@@ -28,7 +29,10 @@ const QuizEditPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${config.API_URL}/api/quizzes/${quizId}`, form);
+      await axios.put(`${config.API_URL}/api/quizzes/${quizId}`, {
+        ...form,
+        version: quiz.version,
+      });
       alert("✅ Cập nhật thành công!");
       navigate("/quizzes");
     } catch (err) {

@@ -17,6 +17,11 @@ import { RefreshToken } from "../infrastructure/persistence/RefreshToken";
 import { User } from "../infrastructure/persistence/User";
 import { UserQuizResult } from "../infrastructure/persistence/UserQuizResult";
 
+const dbPoolMax = Number(process.env.DB_POOL_MAX ?? 20);
+if (!Number.isSafeInteger(dbPoolMax) || dbPoolMax < 1) {
+  throw new Error("DB_POOL_MAX must be a positive integer");
+}
+
 export const DataSourceConfig = new DataSource({
   type: "postgres",
   host: process.env.DB_HOST || "localhost",
@@ -44,6 +49,11 @@ export const DataSourceConfig = new DataSource({
     UserQuizResult,
   ],
   migrations: [],
+  extra: {
+    max: dbPoolMax,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  },
   synchronize: false,
   logging: process.env.NODE_ENV !== "production",
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,

@@ -1,16 +1,16 @@
 // QuizPreviewWrapper.js
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import quizService from "../services/quizService";
+import questionService from "../services/questionService";
 import QuizStartScreen from "../components/QuizUI/QuizStartScreen";
 import QuizRunner from "../components/QuizUI/QuizRunner";
 import QuizSubmitScreen from "../components/QuizUI/QuizSubmitScreen";
 import { Button } from "antd";
 import config from '../config';
+import { createAttemptAutosave } from "../services/attemptAutosave";
 const QuizPreviewWrapper = () => {
   const { quizId } = useParams();
-  const navigate = useNavigate();
-
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [hasStarted, setHasStarted] = useState(false);
@@ -20,13 +20,36 @@ const QuizPreviewWrapper = () => {
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [scoreAfterSubmit, setScoreAfterSubmit] = useState(null);
   const [canRetry, setCanRetry] = useState(false); // ✅ thêm state mới
+  const [autosaveStatus, setAutosaveStatus] = useState("idle");
+  const autosaver = useRef(null);
+  if (!autosaver.current) {
+    autosaver.current = createAttemptAutosave({
+      save: async ({ resultId, answers: answerList }) => {
+        const response = await fetch(
+          `${config.API_URL}/api/results/temp/${resultId}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({ answers: answerList }),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`Autosave failed with HTTP ${response.status}`);
+        }
+      },
+      onStatus: setAutosaveStatus,
+      onError: (err) => console.error("❌ Lỗi khi lưu tạm:", err),
+    });
+  }
+  useEffect(() => () => autosaver.current.cancelPending(), []);
 
   // -------------------------
   // Fetch quiz, questions, latest result
   // -------------------------
   useEffect(() => {
-    console.log("📦 initialAnswers truyền xuống QuizRunner:", answers);
-
     let cancelled = false;
 
     const fetchData = async () => {
@@ -38,11 +61,12 @@ const QuizPreviewWrapper = () => {
       setResult(null);
       setAttemptNumber(1);
       setCanRetry(false);
+      autosaver.current.cancelPending();
 
       try {
         const [fetchedQuiz, fetchedQuestions] = await Promise.all([
           quizService.getQuizById(quizId),
-          fetch(`${config.API_URL}/api/questions/by-quiz/${quizId}`).then((r) => r.json()),
+          questionService.getQuestionsByQuizId(quizId),
         ]);
 
         if (cancelled) return;
@@ -50,42 +74,30 @@ const QuizPreviewWrapper = () => {
         setQuestions(fetchedQuestions);
 
         const token = localStorage.getItem("token");
-        let latestRes = await fetch(`${config.API_URL}/api/results/latest/${quizId}`, {
+        const latestRes = await fetch(`${config.API_URL}/api/results/latest/${quizId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        let latestData = await latestRes.json();
+        if (!latestRes.ok) {
+          throw new Error(`Failed to load latest attempt: HTTP ${latestRes.status}`);
+        }
+        const latestBody = await latestRes.json();
+        let latestData = Object.prototype.hasOwnProperty.call(latestBody ?? {}, "data")
+          ? latestBody.data
+          : latestBody;
         console.log("✅ Latest result (backend):", latestData);
 
-        const storedResultId = localStorage.getItem(`latestResultId_${quizId}`);
-        if (
-          storedResultId &&
-          (!latestData || latestData.id != storedResultId)
-        ) {
-          try {
-            console.log(
-              `🔁 Found stored latestResultId in localStorage: ${storedResultId}. Fetching that result...`
-            );
-            const fetchStored = await fetch(`${config.API_URL}/api/results/${storedResultId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const storedData = await fetchStored.json();
-            if (storedData && storedData.id) {
-              console.log("✅ Using stored result from server:", storedData);
-              latestData = storedData;
-            }
-          } catch (err) {
-            console.warn("⚠️ Failed to fetch result by storedResultId:", err);
-          }
-        }
-
         // 🧠 Nếu không có result thì tạo mới
-        if (!latestData || latestData.error) {
+        if (!latestData) {
           console.log("🚀 No latest result found, creating a new attempt...");
           const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
           });
-          const startData = await startRes.json();
+          if (!startRes.ok) {
+            throw new Error(`Failed to start attempt: HTTP ${startRes.status}`);
+          }
+          const startBody = await startRes.json();
+          const startData = startBody?.data ?? startBody;
           console.log("✅ Created result:", startData);
 
           if (!startData?.id) {
@@ -107,7 +119,8 @@ const QuizPreviewWrapper = () => {
           );
 
           const restored = (latestData.answers || []).reduce((acc, curr) => {
-            if (curr && curr.question != null) acc[curr.question] = curr.answer;
+            const questionId = curr?.questionId ?? curr?.question;
+            if (questionId != null) acc[questionId] = curr.answer;
             return acc;
           }, {});
 
@@ -116,7 +129,7 @@ const QuizPreviewWrapper = () => {
           setHasSubmitted(true);
           setAttemptNumber(latestData.attemptNumber || 1);
 
-          if (lastScore < 90) {
+          if (lastScore < Number(fetchedQuiz.passingScore ?? 90)) {
             console.log("🔁 Score < 90% → allow retry after viewing result");
             setCanRetry(true);
           } else {
@@ -131,7 +144,8 @@ const QuizPreviewWrapper = () => {
         setResult(latestData);
 
         const restored = (latestData.answers || []).reduce((acc, curr) => {
-          if (curr && curr.question != null) acc[curr.question] = curr.answer;
+          const questionId = curr?.questionId ?? curr?.question;
+          if (questionId != null) acc[questionId] = curr.answer;
           return acc;
         }, {});
         setAnswers(restored);
@@ -170,23 +184,14 @@ const QuizPreviewWrapper = () => {
     const answersArray = Object.entries(newAnswers)
       .filter(([qid]) => validQuestionIds.includes(parseInt(qid)))
       .map(([qid, ans]) => ({
-        question: parseInt(qid),
+        questionId: parseInt(qid),
         answer: ans,
         type:
           questions.find((q) => q.id === parseInt(qid))?.question_type ||
           "unknown",
       }));
 
-    fetch(`${config.API_URL}/api/results/temp/${result.id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ answers: answersArray }),
-    })
-      .then(() => console.log("💾 Đã lưu tạm câu trả lời"))
-      .catch((err) => console.error("❌ Lỗi khi lưu tạm:", err));
+    autosaver.current.schedule({ resultId: result.id, answers: answersArray });
   };
 
   // -------------------------
@@ -196,34 +201,38 @@ const QuizPreviewWrapper = () => {
     console.log("🔔 handleSubmit called!");
     console.log("🧪 Attempt number:", attemptNumber);
 
-    const token = localStorage.getItem("token");
-
-    if (!result?.id) {
-      console.warn("⚠️ result.id missing — creating one now...");
-      const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const startData = await startRes.json();
-      if (!startData?.id) {
-        alert("Không thể tạo result mới để nộp bài.");
-        return;
-      }
-      setResult(startData);
-      setAttemptNumber(startData.attemptNumber || 1);
-    }
-
-    const answersArray = questions.map((q) => ({
-      question: q.id,
-      answer: answers[q.id] || null,
-      type: q.question_type || "unknown",
-    }));
-
     try {
-      let submitUrl = `${config.API_URL}/api/results/submit/${result.id}`;
-      let currentResult = result;
+      const token = localStorage.getItem("token");
+      autosaver.current.cancelPending();
+      await autosaver.current.waitForIdle();
 
-      if (result.submittedAt) {
+      let currentResult = result;
+      if (!currentResult?.id) {
+        const startRes = await fetch(`${config.API_URL}/api/results/start/${quizId}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!startRes.ok) {
+          throw new Error(`Failed to start attempt: HTTP ${startRes.status}`);
+        }
+        const startBody = await startRes.json();
+        currentResult = startBody?.data ?? startBody;
+        if (!currentResult?.id) {
+          throw new Error("Start attempt returned no result id");
+        }
+        setResult(currentResult);
+        setAttemptNumber(currentResult.attemptNumber || 1);
+      }
+
+      const answersArray = questions.map((q) => ({
+        questionId: q.id,
+        answer: answers[q.id] ?? null,
+        type: q.question_type || "unknown",
+      }));
+
+      let submitUrl = `${config.API_URL}/api/results/submit/${currentResult.id}`;
+
+      if (currentResult.submittedAt) {
         console.log(
           "🔁 Current result already submitted — creating new attempt before submit..."
         );
@@ -231,7 +240,11 @@ const QuizPreviewWrapper = () => {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
-        currentResult = await startRes.json();
+        if (!startRes.ok) {
+          throw new Error(`Failed to start retry: HTTP ${startRes.status}`);
+        }
+        const startBody = await startRes.json();
+        currentResult = startBody?.data ?? startBody;
         if (!currentResult?.id) {
           alert("Không thể tạo result mới để nộp bài.");
           return;
@@ -251,22 +264,26 @@ const QuizPreviewWrapper = () => {
         body: JSON.stringify({ answers: answersArray }),
       });
 
-      const submitData = await submitRes.json();
-      console.log("🎯 Submit response:", submitData);
-
-      if (submitData?.result?.id) {
-        localStorage.setItem(`latestResultId_${quizId}`, submitData.result.id);
-        console.log(
-          "💾 Lưu result.id mới vào localStorage:",
-          submitData.result.id
-        );
+      if (!submitRes.ok) {
+        throw new Error(`Submit failed with HTTP ${submitRes.status}`);
       }
+      const submitBody = await submitRes.json();
+      const submittedResult =
+        submitBody?.data?.result ??
+        submitBody?.result ??
+        submitBody?.data ??
+        submitBody;
+      if (!submittedResult?.id) {
+        throw new Error("Submit response did not contain the saved result");
+      }
+      console.log("🎯 Submit response:", submittedResult);
 
       setHasSubmitted(true);
-      setScoreAfterSubmit(submitData.result?.score || 0);
-      setResult(submitData.result);
+      setScoreAfterSubmit(submittedResult.score || 0);
+      setResult(submittedResult);
     } catch (err) {
       console.error("❌ Error while submitting:", err);
+      alert(err.message || "Không thể nộp bài. Vui lòng thử lại.");
     }
   };
 
@@ -327,7 +344,7 @@ const QuizPreviewWrapper = () => {
       initialAnswersMap[q.id] = buildInitialAnswersForQuestion(q);
     });
     const correctAnswersArray = questions.map((q) => ({
-      question: q.id,
+      questionId: q.id,
       answer: initialAnswersMap[q.id] || {},
     }));
 
@@ -408,21 +425,32 @@ const QuizPreviewWrapper = () => {
   }
 
   return (
-    <QuizRunner
-      key={quizId + "_" + result?.id}
-      questions={questions}
-      headerText={ui.headerText || quiz.title}
-      onePerPage={ui.oneQuestionPerPage}
-      onAnswerChange={handleAnswerChange}
-      onSubmit={handleSubmit}
-      timeLimit={ui.timeLimit || 0}
-      hasSubmitted={hasSubmitted}
-      showCorrectAnswer={quiz.visibleTo === "everyone_record" || hasSubmitted}
-      initialAnswers={answers}
-      uiSettings={ui}
-      scoreAfterSubmit={scoreAfterSubmit}
-      correctAnswers={(result?.result || result)?.correctAnswers || []}
-    />
+    <div>
+      {autosaveStatus !== "idle" && (
+        <p role="status" aria-live="polite">
+          {autosaveStatus === "pending" && "Saving answers shortly..."}
+          {autosaveStatus === "saving" && "Saving answers..."}
+          {autosaveStatus === "saved" && "Answers saved"}
+          {autosaveStatus === "error" &&
+            "Autosave failed. Your answers will be sent again when you submit."}
+        </p>
+      )}
+      <QuizRunner
+        key={quizId + "_" + result?.id}
+        questions={questions}
+        headerText={ui.headerText || quiz.title}
+        onePerPage={ui.oneQuestionPerPage}
+        onAnswerChange={handleAnswerChange}
+        onSubmit={handleSubmit}
+        timeLimit={ui.timeLimit || 0}
+        hasSubmitted={hasSubmitted}
+        showCorrectAnswer={quiz.visibleTo === "everyone_record" || hasSubmitted}
+        initialAnswers={answers}
+        uiSettings={ui}
+        scoreAfterSubmit={scoreAfterSubmit}
+        correctAnswers={(result?.result || result)?.correctAnswers || []}
+      />
+    </div>
   );
 };
 

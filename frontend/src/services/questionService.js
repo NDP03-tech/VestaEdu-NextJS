@@ -17,7 +17,13 @@ const getAllQuestions = async () => {
 const getQuestionsByQuizId = async (quizId) => {
   try {
     const response = await apiClient.get(`/api/questions/by-quiz/${quizId}`);
-    return response.data;
+    const questions = Array.isArray(response.data)
+      ? response.data
+      : response.data?.data;
+    if (!Array.isArray(questions)) {
+      throw new Error("Unexpected response from questions-by-quiz endpoint.");
+    }
+    return questions;
   } catch (error) {
     console.error("Error fetching questions by quiz ID:", error);
     throw error;

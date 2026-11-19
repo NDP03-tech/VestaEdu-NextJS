@@ -52,6 +52,7 @@ import {
   DeleteQuestionUseCase,
   GetAllQuestionsUseCase,
   GetQuestionByIdUseCase,
+  GetQuestionsByQuizIdUseCase,
   UpdateQuestionUseCase,
 } from "../../applications/Question Use-case";
 import {
@@ -59,6 +60,7 @@ import {
   DeleteQuizUseCase,
   GetAllQuizzesUseCase,
   GetQuizByIdUseCase,
+  SaveQuizContentsUseCase,
   UpdateQuizUseCase,
 } from "../../applications/Quiz Use-case";
 import { createTypeOrmRepositories } from "../typeorm-container";
@@ -100,6 +102,7 @@ import {
   SubmitAttemptUseCase,
   TempSaveAttemptUseCase,
 } from "../../applications/UserQuizResult Use-case";
+import type { RawAnswerInput } from "../../domain/entities/user-quiz-result.entity";
 import { UserQuizResultController } from "./controllers/userQuizResultController";
 import { UserController } from "./controllers/userController";
 import { ClassController } from "./controllers/classController";
@@ -198,7 +201,9 @@ export function createCrudControllers() {
     getById: new GetQuestionByIdUseCase(repositories.questions),
     update: new UpdateQuestionUseCase(repositories.questions),
     remove: new DeleteQuestionUseCase(repositories.questions),
-  });
+  },
+  new GetQuestionsByQuizIdUseCase(repositories.questions),
+  new GetQuizByIdUseCase(repositories.quizzes));
 
   const quiz = new QuizController({
     create: new CreateQuizUseCase(repositories.quizzes),
@@ -206,7 +211,7 @@ export function createCrudControllers() {
     getById: new GetQuizByIdUseCase(repositories.quizzes),
     update: new UpdateQuizUseCase(repositories.quizzes),
     remove: new DeleteQuizUseCase(repositories.quizzes),
-  });
+  }, new SaveQuizContentsUseCase(repositories.quizzes));
 
   return {
     blog,
@@ -375,20 +380,29 @@ export function createWorkflowControllers() {
         repositories.results,
         repositories.results,
         repositories.attempts,
+        attemptQueries,
       ).execute(
         Number((request.user as { id?: number })?.id),
         Number(request.params.quizId),
       ),
-    tempSave: (request) =>
-      new TempSaveAttemptUseCase(repositories.results).execute(
+    tempSave: (request) => {
+      const body = (request.body ?? {}) as {
+        answers?: RawAnswerInput[];
+        state?: Record<string, unknown>;
+      };
+      return new TempSaveAttemptUseCase(repositories.results).execute(
         request.params.resultId ?? "",
-        ((request.body as { answers?: unknown[] })?.answers ?? []) as never,
-      ),
-    submitAttempt: (request) =>
-      new SubmitAttemptUseCase(repositories.results, attemptQueries).execute(
+        body.answers ?? [],
+        body.state,
+      );
+    },
+    submitAttempt: (request) => {
+      const body = (request.body ?? {}) as { answers?: RawAnswerInput[] };
+      return new SubmitAttemptUseCase(repositories.results, attemptQueries).execute(
         request.params.resultId ?? "",
-        ((request.body as { answers?: unknown[] })?.answers ?? []) as never,
-      ),
+        body.answers ?? [],
+      );
+    },
     getLatestResult: (request) =>
       new GetLatestAttemptUseCase(repositories.results).execute(
         Number((request.user as { id?: number })?.id),

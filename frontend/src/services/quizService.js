@@ -1,7 +1,9 @@
 import axios from 'axios';
 import config from '../config';
+import apiClient from './apiClient';
 
 const API_URL = `${config.API_URL}/api`; // Sử dụng API_URL từ config
+const unwrapData = (response) => response.data?.data ?? response.data;
 
 const getQuizzes = async () => {
   try {
@@ -45,10 +47,23 @@ const deleteQuiz = async (id) => {
 
 const getQuizById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/quizzes/${id}`);
-    return response.data;
+    const response = await apiClient.get(`/api/quizzes/${id}`);
+    return unwrapData(response);
   } catch (error) {
     console.error('Error fetching quiz:', error);
+    throw error;
+  }
+};
+
+const saveQuizContents = async (id, contents) => {
+  try {
+    const response = await apiClient.put(
+      `/api/quizzes/${id}/contents`,
+      contents,
+    );
+    return unwrapData(response);
+  } catch (error) {
+    console.error('Error saving quiz contents:', error);
     throw error;
   }
 };
@@ -58,5 +73,6 @@ export default {
   createQuiz,
   updateQuiz,
   deleteQuiz,
-  getQuizById
+  getQuizById,
+  saveQuizContents,
 };

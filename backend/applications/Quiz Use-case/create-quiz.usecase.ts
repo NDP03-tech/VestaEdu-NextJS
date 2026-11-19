@@ -5,7 +5,7 @@ import type { CreateQuizInput } from "./quiz.use-case.interface";
 export class CreateQuizUseCase {
   constructor(private readonly repository: quizRepository) {}
 
-  async execute(input: CreateQuizInput = {}): Promise<void> {
-    await this.repository.create(QuizEntity.create(input));
+  async execute(input: CreateQuizInput = {}): Promise<QuizEntity> {
+    return this.repository.createAndReturn(QuizEntity.create(input));
   }
 }

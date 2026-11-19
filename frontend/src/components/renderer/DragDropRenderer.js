@@ -194,8 +194,34 @@ const createHintInput = (el, { value, editable, status, onChange }) => {
 
 const createGap = (
   el,
-  { key, value, editable, showCorrectAnswer, status, onRemove, onDropAnswer },
+  {
+    key,
+    value,
+    editable,
+    showCorrectAnswer,
+    status,
+    onRemove,
+    onDropAnswer,
+    studentSafe,
+  },
 ) => {
+  if (studentSafe) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = value ?? "";
+    input.placeholder = editable ? "Type your answer..." : "";
+    input.disabled = !editable;
+    input.className = `min-w-[100px] rounded-md border px-3 py-1.5 ${fieldClasses({
+      editable,
+      status,
+    })}`;
+    if (editable) {
+      input.oninput = (event) => onDropAnswer(key, event.target.value);
+    }
+    el.appendChild(input);
+    return;
+  }
+
   const state = { value, status, editable, showCorrectAnswer };
 
   const wrapper = document.createElement("span");
@@ -315,6 +341,7 @@ const DragDropRichRenderer = ({
         status,
         editable,
         showCorrectAnswer,
+        studentSafe: question.studentSafe === true,
         onChange: (val) => handleChange(key, val),
         onRemove: handleRemove,
         onDropAnswer: placeAnswer,
@@ -387,16 +414,20 @@ const DragDropRichRenderer = ({
             <p className="m-0 font-semibold text-slate-900">
               How to complete this exercise
             </p>
-            <ul className="m-0 mt-1 list-disc space-y-1 pl-5">
-              <li>
-                <strong>Drag</strong> answer options from below into the gaps in
-                the text
-              </li>
-              <li>
-                <strong>Double-click</strong> on placed answers to remove them
-              </li>
-              <li>All gaps must be filled before submitting</li>
-            </ul>
+            {question.studentSafe ? (
+              <p className="m-0 mt-1">Type an answer in each gap.</p>
+            ) : (
+              <ul className="m-0 mt-1 list-disc space-y-1 pl-5">
+                <li>
+                  <strong>Drag</strong> answer options from below into the gaps in
+                  the text
+                </li>
+                <li>
+                  <strong>Double-click</strong> on placed answers to remove them
+                </li>
+                <li>All gaps must be filled before submitting</li>
+              </ul>
+            )}
           </div>
         </div>
       )}

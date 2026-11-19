@@ -24,6 +24,9 @@ interface UserQuizResultProps {
   userId: number;
   quizId: number; // FK tới QuizEntity.id (integer PK)
   attemptNumber: number;
+  quizVersion: number | null;
+  deadline: Date | null;
+  state: Record<string, unknown>;
   /**
    * ⚠️  Nguồn chân lý cho attempt là AttemptCounterEntity (xem {@link AttemptCounterEntity}).
    *      `attemptNumber` ở đây chỉ là snapshot tại lúc submit,
@@ -44,6 +47,9 @@ interface CreateUserQuizResultProps {
   userId: number;
   quizId: number;
   attemptNumber: number;
+  quizVersion?: number | null;
+  deadline?: Date | null;
+  state?: Record<string, unknown>;
 }
 
 export class UserQuizResultEntity {
@@ -60,6 +66,9 @@ export class UserQuizResultEntity {
       userId: Number(input.userId),
       quizId: input.quizId,
       attemptNumber: input.attemptNumber,
+      quizVersion: input.quizVersion ?? null,
+      deadline: input.deadline ?? null,
+      state: input.state ?? {},
       answers: [],
       score: 0,
       passed: false,
@@ -87,6 +96,15 @@ export class UserQuizResultEntity {
   }
   get attemptNumber() {
     return this.props.attemptNumber;
+  }
+  get quizVersion() {
+    return this.props.quizVersion;
+  }
+  get deadline() {
+    return this.props.deadline;
+  }
+  get state(): Record<string, unknown> {
+    return { ...this.props.state };
   }
   get answers(): QuizAnswer[] {
     return [...this.props.answers];
@@ -122,7 +140,10 @@ export class UserQuizResultEntity {
   }
 
   // ===== Auto-save trong lúc làm bài (chưa nộp) =====
-  tempSave(rawAnswers: RawAnswerInput[]): void {
+  tempSave(
+    rawAnswers: RawAnswerInput[],
+    state?: Record<string, unknown>,
+  ): void {
     if (this.isSubmitted()) {
       throw new Error("Cannot modify a submitted attempt");
     }
@@ -134,6 +155,7 @@ export class UserQuizResultEntity {
       score: 0,
       requiresManualGrading: false,
     }));
+    if (state !== undefined) this.props.state = { ...state };
     this.touch();
   }
 

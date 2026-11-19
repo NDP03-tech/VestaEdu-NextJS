@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import QuizInfo from "./QuizInfo/QuizInfo";
 import QuestionFormTest from "./QuestionForm/QuestionFormTest";
-import config from "../config";
+import questionService from "../services/questionService";
+import quizService from "../services/quizService";
+import { selectChangedQuestions } from "../services/quizBuilderSave";
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -37,24 +39,21 @@ const QuizBuilder = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [focusedQuestionId, setFocusedQuestionId] = useState(null);
+  const [deletedQuestionIds, setDeletedQuestionIds] = useState([]);
+  const originalQuestions = useRef([]);
 
-  const savedCount = questions.filter((q) => q.id).length;
+  const savedCount = questions.filter((q) => q.id ?? q.questionId).length;
 
   /* ----------------------------- Effects ----------------------------- */
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const quizRes = await fetch(`${config.API_URL}/api/quizzes/${quizId}`);
-        if (!quizRes.ok) throw new Error("Quiz not found.");
-        const quizData = await quizRes.json();
+        const quizData = await quizService.getQuizById(quizId);
         setQuizInfo(quizData);
 
-        const questionRes = await fetch(
-          `${config.API_URL}/api/questions/by-quiz/${quizId}`,
-        );
-        if (!questionRes.ok) throw new Error("Failed to fetch questions.");
-        const questionsData = await questionRes.json();
+        const questionsData = await questionService.getQuestionsByQuizId(quizId);
+        originalQuestions.current = questionsData;
         setQuestions(questionsData);
       } catch (err) {
         console.error("❌ Error fetching data:", err);
@@ -73,67 +72,26 @@ const QuizBuilder = () => {
   const handleSaveQuizInfo = async () => {
     setSaving(true);
     try {
-      const quizRes = await fetch(`${config.API_URL}/api/quizzes/${quizId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(quizInfo),
+      const result = await quizService.saveQuizContents(quizId, {
+        quiz: quizInfo,
+        questions: selectChangedQuestions(
+          questions,
+          originalQuestions.current,
+        ),
+        deletedQuestionIds,
       });
-
-      if (!quizRes.ok) throw new Error("Failed to update quiz.");
-      const updatedQuiz = await quizRes.json();
-      setQuizInfo(updatedQuiz);
-
-      // Lọc bỏ các câu hỏi rỗng hoặc trùng lặp
-      const filteredQuestions = questions.filter((q) => {
-        const keys = Object.keys(q);
-        if (keys.length <= 1 && q.quiz_id) return false;
-        if (!q.question_text && !q.questionText) return false;
-        return true;
-      });
-
-      // Loại bỏ trùng lặp theo nội dung câu hỏi
-      const uniqueQuestions = [];
-      const seenTexts = new Set();
-      for (const q of filteredQuestions) {
-        const text = q.question_text || q.questionText;
-        if (!seenTexts.has(text)) {
-          uniqueQuestions.push(q);
-          seenTexts.add(text);
-        }
-      }
-
-      const updatedQuestions = await Promise.all(
-        uniqueQuestions.map(async (q) => {
-          const questionData = {
-            ...q,
-            quiz_id: quizId,
-          };
-
-          if (q.id) {
-            const res = await fetch(`${config.API_URL}/api/questions/${q.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(questionData),
-            });
-            if (!res.ok) throw new Error("Failed to update question.");
-            return await res.json();
-          } else {
-            const res = await fetch(`${config.API_URL}/api/questions`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(questionData),
-            });
-            if (!res.ok) throw new Error("Failed to create question.");
-            return await res.json();
-          }
-        }),
-      );
-
-      setQuestions(updatedQuestions);
+      setQuizInfo(result.quiz);
+      setQuestions(result.questions);
+      originalQuestions.current = result.questions;
+      setDeletedQuestionIds([]);
       alert("🎉 Quiz and questions saved successfully.");
     } catch (err) {
       console.error("❌ Error saving quiz and questions:", err);
-      alert("Failed to save quiz and questions.");
+      alert(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to save quiz and questions.",
+      );
     } finally {
       setSaving(false);
     }
@@ -151,27 +109,15 @@ const QuizBuilder = () => {
     }, 100);
   };
 
-  const handleDeleteQuestion = async (index, questionId) => {
-    if (!window.confirm("Are you sure you want to delete this question?"))
-      return;
-
-    try {
-      if (questionId) {
-        const res = await fetch(
-          `${config.API_URL}/api/questions/${questionId}`,
-          { method: "DELETE" },
-        );
-
-        if (!res.ok) throw new Error("Failed to delete question.");
-      }
-
-      const updated = [...questions];
-      updated.splice(index, 1);
-      setQuestions(updated);
-    } catch (err) {
-      console.error("❌ Error deleting question:", err);
-      alert("Failed to delete question.");
+  const handleDeleteQuestion = (index, questionId) => {
+    if (questionId) {
+      setDeletedQuestionIds((previous) =>
+        previous.includes(Number(questionId))
+          ? previous
+          : [...previous, Number(questionId)],
+      );
     }
+    setQuestions((previous) => previous.filter((_, current) => current !== index));
   };
 
   const handleFinishEdit = (updatedQuestion) => {
@@ -259,9 +205,9 @@ const QuizBuilder = () => {
             <div className="flex flex-col gap-6">
               {questions.map((question, index) => (
                 <div
-                  key={question.id || index}
+                  key={question.id || question.questionId || index}
                   className={`rounded-xl transition-shadow duration-200 ${
-                    focusedQuestionId === question.id
+                    focusedQuestionId === (question.id || question.questionId)
                       ? "ring-4 ring-blue-500/30"
                       : ""
                   }`}

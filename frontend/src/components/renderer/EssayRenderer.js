@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import ClozeTextRenderer from "./ClozeTextRenderer";
+import { getEssayDisplayAnswer } from "./essayAnswer";
 import {
   Card,
   Input,
@@ -37,12 +38,6 @@ const EssayRenderer = ({
     return /<a\b[^>]*\bcloze\b/i.test(question?.question_text || "");
   }, [question?.question_text]);
 
-  const extractEssayText = (ans) => {
-    if (typeof ans === "string") return ans;
-    if (ans && typeof ans === "object") return ans.essay || "";
-    return "";
-  };
-
   const extractCloze = (ans) => {
     if (ans && typeof ans === "object" && !Array.isArray(ans)) {
       const { essay, ...rest } = ans;
@@ -70,12 +65,13 @@ const EssayRenderer = ({
 
   // ✅ FIX: Chỉ chạy 1 lần khi component mount hoặc khi question.id thay đổi
   useEffect(() => {
-    let displayAnswer = "";
+    const displayAnswer = getEssayDisplayAnswer(
+      showCorrectAnswer,
+      frozenAnswer,
+      initialAnswer,
+    );
 
     if (showCorrectAnswer) {
-      // Review mode: ưu tiên frozenAnswer
-      displayAnswer =
-        extractEssayText(frozenAnswer) || extractEssayText(initialAnswer) || "";
       console.log(`📝 Review mode - Question ${question?.id}:`, {
         frozenAnswer,
         initialAnswer,
@@ -83,7 +79,6 @@ const EssayRenderer = ({
       });
     } else {
       // Edit mode: dùng initialAnswer
-      displayAnswer = initialAnswer || "";
       console.log(`✏️ Edit mode - Question ${question?.id}:`, {
         initialAnswer,
         using: displayAnswer,
@@ -101,7 +96,11 @@ const EssayRenderer = ({
     if (isInitialMount.current) return; // Skip lần đầu
 
     if (showCorrectAnswer) {
-      const displayAnswer = frozenAnswer || initialAnswer || "";
+      const displayAnswer = getEssayDisplayAnswer(
+        showCorrectAnswer,
+        frozenAnswer,
+        initialAnswer,
+      );
       console.log(
         `🔄 Switching to review mode - Question ${question?.id}:`,
         displayAnswer
@@ -109,7 +108,7 @@ const EssayRenderer = ({
       setAnswer(displayAnswer);
       updateCounts(displayAnswer);
     }
-  }, [showCorrectAnswer, frozenAnswer]);
+  }, [showCorrectAnswer, frozenAnswer, initialAnswer]);
 
   const updateCounts = (text) => {
     const chars = text.length;

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Axios from "axios";
 import RichTextEditor from "../Editor/RichTextEditor";
 import ReadingTaskEditor from "../Editor/ReadingTaskEditor";
 import EditorSection from "../Editor/EditorSection";
@@ -7,7 +6,6 @@ import ExplanationEditor from "../Explanation/ExplanationEditor";
 import QuestionType from "../QuestionType";
 import CheckboxesEditor from "../Editor/CheckboxEditor";
 import MultipleChoiceEditor from "../Editor/MultipleChoiceEditor";
-import config from "../../config";
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -47,6 +45,8 @@ const QuestionFormTest = ({
   const [explanation, setExplanation] = useState("");
   const [points, setPoints] = useState(0);
   const [hintWords, setHintWords] = useState([]);
+  const [highlights, setHighlights] = useState([]);
+  const [correctAnswer, setCorrectAnswer] = useState(null);
   const [isFocused, setIsFocused] = useState(false);
   const [questionId, setQuestionId] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -57,38 +57,23 @@ const QuestionFormTest = ({
   /* ----------------------------- Effects ----------------------------- */
 
   useEffect(() => {
-    const fetchQuestion = async () => {
-      if (
-        questionData.id &&
-        (!questionData.questionText || !questionData.questionType)
-      ) {
-        try {
-          const res = await Axios.get(
-            `${config.API_URL}/api/questions/${questionData.id}`,
-          );
-          setFromData(res.data);
-        } catch (err) {
-          console.error("❌ Error fetching question:", err);
-        }
-      } else {
-        setFromData(questionData);
-      }
-    };
-    fetchQuestion();
+    setQuestionId(questionData.id || questionData.questionId || "");
+    setQuestionType(questionData.questionType || questionData.question_type || "");
+    setGaps(questionData.gaps || []);
+    setDropdowns(questionData.dropdowns || []);
+    setOptions(questionData.options || []);
+    setQuestionText(questionData.questionText || questionData.question_text || "");
+    setReadingContent(questionData.readingContent || questionData.reading_content || "");
+    setExplanation(questionData.explanation || "");
+    setPoints(questionData.points || 0);
+    setHintWords(questionData.hintWords || questionData.hint_words || []);
+    setHighlights(
+      questionData.highlights ||
+        questionData.answerBlueprint?.highlights ||
+        [],
+    );
+    setCorrectAnswer(questionData.correctAnswer ?? null);
   }, [questionData]);
-
-  const setFromData = (data) => {
-    setQuestionId(data.id || "");
-    setQuestionType(data.questionType || data.question_type || "");
-    setGaps(data.gaps || []);
-    setDropdowns(data.dropdowns || []);
-    setOptions(data.options || []);
-    setQuestionText(data.questionText || data.question_text || "");
-    setReadingContent(data.readingContent || data.reading_content || "");
-    setExplanation(data.explanation || "");
-    setPoints(data.points || 0);
-    setHintWords(data.hintWords || data.hint_words || []);
-  };
 
   /* ----------------------------- Handlers ---------------------------- */
 
@@ -161,39 +146,21 @@ const QuestionFormTest = ({
     gaps,
     dropdowns,
     hintWords,
+    highlights,
+    correctAnswer,
     quiz_id: quizId,
     ...(hasOptions ? { options } : {}),
   });
 
-  const handleCreateQuestion = async () => {
-    try {
-      const response = await Axios.post(
-        `${config.API_URL}/api/questions`,
-        buildPayload(),
-      );
-      alert("✅ Question created successfully");
-      setQuestionId(response.data.id);
-    } catch (error) {
-      console.error("❌ Failed to create question:", error);
-      alert("❌ Failed to create question.");
-    }
+  const handleCreateQuestion = () => {
+    onFinishEdit?.(buildPayload());
+    alert("Question added to unsaved changes. Click Save quiz to persist it.");
   };
 
-  const handleUpdateQuestion = async () => {
+  const handleUpdateQuestion = () => {
     const updatedData = buildPayload();
-    console.log("📤 Updating question with:", updatedData);
-
-    try {
-      await Axios.put(
-        `${config.API_URL}/api/questions/${questionId}`,
-        updatedData,
-      );
-      alert("✅ Question updated successfully");
-      onFinishEdit?.({ ...updatedData, id: questionId });
-    } catch (error) {
-      console.error("❌ Failed to update question:", error);
-      alert("❌ Update failed.");
-    }
+    onFinishEdit?.({ ...updatedData, ...(questionId ? { id: questionId } : {}) });
+    alert("Question changes are ready. Click Save quiz to persist them.");
   };
 
   const handleDelete = () => {

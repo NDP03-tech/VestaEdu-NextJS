@@ -286,6 +286,16 @@ const GeneratedDropdownRenderer = ({
         if (editable) {
           field.onchange = (e) => handleChange(key, e.target.value);
         }
+      } else if (question.studentSafe) {
+        field = document.createElement("input");
+        field.type = "text";
+        field.className = "form-control d-inline-block gap-input";
+        field.placeholder = editable ? "Type your answer..." : "";
+        field.value = savedValue ?? "";
+        field.disabled = !editable;
+        if (editable) {
+          field.oninput = (e) => handleChange(key, e.target.value);
+        }
       } else {
         // 🎨 Enhanced dropdown with generated choices for gaps
         const gapIndex = gapCounter - 1;

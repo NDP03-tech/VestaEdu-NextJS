@@ -14,6 +14,12 @@ import { TEST_JWT_SECRET, MOCK_USER, MOCK_RESULT, makeMockRepo,
 
 import { CrudController } from "../../../infrastructure/presentation/controllers/crud.controller";
 import { createCrudRouter } from "../../../infrastructure/presentation/routes/crud.routes";
+import { createQuestionRouter } from "../../../infrastructure/presentation/routes/question.routes";
+import { createQuizContentsRouter } from "../../../infrastructure/presentation/routes/quiz-content.routes";
+import { QuestionController } from "../../../infrastructure/presentation/controllers/QuestionController";
+import { QuizController } from "../../../infrastructure/presentation/controllers/QuizController";
+import { QuestionEntity } from "../../../domain/entities/question.entity";
+import { QuizEntity } from "../../../domain/entities";
 
 import { CreateBlogUseCase, DeleteBlogUseCase, GetAllBlogsUseCase,
   GetBlogByIdUseCase, UpdateBlogUseCase } from "../../../applications/Blog Use-case";
@@ -28,7 +34,7 @@ import { CreateInstructorUseCase, DeleteInstructorUseCase, GetAllInstructorsUseC
 import { CreateQuizUseCase, DeleteQuizUseCase, GetAllQuizzesUseCase,
   GetQuizByIdUseCase, UpdateQuizUseCase } from "../../../applications/Quiz Use-case";
 import { CreateQuestionUseCase, DeleteQuestionUseCase, GetAllQuestionsUseCase,
-  GetQuestionByIdUseCase, UpdateQuestionUseCase } from "../../../applications/Question Use-case";
+  GetQuestionByIdUseCase, GetQuestionsByQuizIdUseCase, UpdateQuestionUseCase } from "../../../applications/Question Use-case";
 import { CreateCourseRegistrationUseCase, DeleteCourseRegistrationUseCase,
   GetAllCourseRegistrationsUseCase, GetCourseRegistrationByIdUseCase,
   UpdateCourseRegistrationUseCase } from "../../../applications/CourseRegistration Use-case";
@@ -47,13 +53,17 @@ export function makeToken(role: "admin" | "teacher" | "student" = "admin"): stri
 
 // ─── Middleware stubs ──────────────────────────────────────────────────────────
 function buildAuthMiddleware(): RequestHandler {
-  return (req, _res, next) => {
+  return (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) return next();
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
     const token = authHeader.split(" ")[1];
     try {
       (req as unknown as { user: unknown }).user = jwt.verify(token, TEST_JWT_SECRET);
-    } catch { /* invalid token — leave req.user undefined */ }
+    } catch {
+      return res.status(403).json({ success: false, message: "Invalid token" });
+    }
     next();
   };
 }
@@ -93,7 +103,60 @@ export function buildTestApp() {
   const eventRepo = makeMockRepo(MOCK_EVENT);
   const instructorRepo = makeMockRepo(MOCK_INSTRUCTOR);
   const quizRepo = makeMockRepo(MOCK_QUIZ);
+  quizRepo.updateIfVersionMatches = jest.fn().mockResolvedValue(undefined);
+  quizRepo.getById.mockResolvedValue(
+    QuizEntity.reconstitute({
+      id: 1,
+      title: "Quiz 1",
+      category: "English",
+      visibleTo: "everyone",
+      uiSettings: QuizEntity.defaultUiSettings,
+      passingScore: 90,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    }),
+  );
+  quizRepo.createAndReturn = jest.fn().mockResolvedValue(
+    QuizEntity.reconstitute({
+      id: 2,
+      title: "Quiz 2",
+      category: "English",
+      visibleTo: "everyone",
+      status: "published",
+      version: 1,
+      uiSettings: QuizEntity.defaultUiSettings,
+      passingScore: 90,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    }),
+  );
   const questionRepo = makeMockRepo(MOCK_QUESTION);
+  const questionForQuiz = QuestionEntity.reconstitute({
+    id: 1,
+    quizId: 1,
+    order: 1,
+    questionType: "multiple-choice",
+    questionText: '<a class="cloze dropdown" data-answer="four" data-answers="four" data-options="[&quot;four&quot;,&quot;five&quot;]">Choose</a>',
+    readingContent: null,
+    points: 1,
+    explanation: "The answer is four.",
+    answerBlueprint: {
+      gaps: [{ index: 0, correctAnswers: ["four"] }],
+      dropdowns: [{ index: 0, options: ["four", "five"], correctAnswer: "four" }],
+      hintWords: [{ index: 0, word: "four", hint: "A number after three" }],
+      highlights: [{ index: 0, correctAnswers: ["four"] }],
+      options: [
+        { text: "four", isCorrect: true },
+        { text: "five", isCorrect: false },
+      ],
+    },
+    correctAnswer: "four",
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
+  const questionQueryRepo = {
+    getByQuizId: jest.fn().mockResolvedValue([questionForQuiz]),
+  };
   const courseRegRepo = makeMockRepo(MOCK_COURSE_REG);
   const eventRegRepo = makeMockRepo(MOCK_EVENT_REG);
   const classRepo = makeMockRepo(MOCK_CLASS);
@@ -140,20 +203,28 @@ export function buildTestApp() {
     update: new UpdateInstructorUseCase(instructorRepo as never),
     remove: new DeleteInstructorUseCase(instructorRepo as never),
   });
-  const quizCtrl = new CrudController({
+  const quizContentsUseCase = {
+    execute: jest.fn(async () => ({
+      quiz: { toJSON: () => ({ id: 1, title: "Saved quiz" }) },
+      questions: [],
+    })),
+  };
+  const quizCtrl = new QuizController({
     create: new CreateQuizUseCase(quizRepo as never),
     getAll: new GetAllQuizzesUseCase(quizRepo as never),
     getById: new GetQuizByIdUseCase(quizRepo as never),
     update: new UpdateQuizUseCase(quizRepo as never),
     remove: new DeleteQuizUseCase(quizRepo as never),
-  });
-  const questionCtrl = new CrudController({
+  }, quizContentsUseCase as never);
+  const questionCtrl = new QuestionController({
     create: new CreateQuestionUseCase(questionRepo as never),
     getAll: new GetAllQuestionsUseCase(questionRepo as never),
     getById: new GetQuestionByIdUseCase(questionRepo as never),
     update: new UpdateQuestionUseCase(questionRepo as never),
     remove: new DeleteQuestionUseCase(questionRepo as never),
-  });
+  },
+  new GetQuestionsByQuizIdUseCase(questionQueryRepo as never),
+  new GetQuizByIdUseCase(quizRepo as never));
   const courseRegCtrl = new CrudController({
     create: new CreateCourseRegistrationUseCase(courseRegRepo as never),
     getAll: new GetAllCourseRegistrationsUseCase(courseRegRepo as never),
@@ -183,7 +254,12 @@ export function buildTestApp() {
   app.use("/api/course", createCrudRouter(courseCtrl, contentWrite));
   app.use("/api/events", createCrudRouter(eventCtrl, contentWrite));
   app.use("/api/instructors", createCrudRouter(instructorCtrl, { createPath: "/", ...adminWrite }));
+  app.use(
+    "/api/quizzes",
+    createQuizContentsRouter(quizCtrl, authenticateToken, authorizeRoles),
+  );
   app.use("/api/quizzes", createCrudRouter(quizCtrl, { createPath: "/", ...contentWrite }));
+  app.use("/api/questions", createQuestionRouter(questionCtrl, authenticateToken, authorizeRoles));
   app.use("/api/questions", authenticateToken, authorizeRoles("admin", "teacher"),
     createCrudRouter(questionCtrl, { createPath: "/", ...contentWrite }));
   app.use("/api/course-registrations", authenticateToken,
@@ -315,6 +391,10 @@ export function buildTestApp() {
     res.status(500).json({ message: msg });
   });
 
-  return { app, repos: { blogRepo, categoryRepo, courseRepo, eventRepo, instructorRepo, quizRepo, questionRepo, courseRegRepo, eventRegRepo, classRepo, userRepo, resultRepo, refreshTokenRepo } };
+  return {
+    app,
+    quizContentsUseCase,
+    repos: { blogRepo, categoryRepo, courseRepo, eventRepo, instructorRepo, quizRepo, questionRepo, courseRegRepo, eventRegRepo, classRepo, userRepo, resultRepo, refreshTokenRepo },
+  };
 }
 

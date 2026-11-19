@@ -1,5 +1,8 @@
 // (đã xoá import randomUUID - không còn dùng; DB tự sinh integer PK)
 export type QuizVisibility = "everyone" | string;
+export type QuizStatus = "draft" | "published" | "archived";
+export const isQuizStatus = (value: unknown): value is QuizStatus =>
+  value === "draft" || value === "published" || value === "archived";
 
 export interface QuizUiSettings {
   oneQuestionPerPage: boolean;
@@ -30,6 +33,8 @@ interface QuizProps {
    * Dùng bởi UserQuizResultEntity.submit() / applyManualGrade() thay vì hard-code.
    */
   passingScore: number;
+  status?: QuizStatus;
+  version?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +45,7 @@ interface CreateQuizProps {
   visibleTo?: QuizVisibility;
   uiSettings?: Partial<QuizUiSettings>;
   passingScore?: number;
+  status?: QuizStatus;
 }
 
 /** Default passing score theo model Quiz.js thật (90%) */
@@ -70,6 +76,8 @@ export class QuizEntity {
     private _visibleTo: QuizVisibility,
     private _uiSettings: QuizUiSettings,
     private _passingScore: number,
+    private _status: QuizStatus,
+    private readonly _version: number,
     private readonly _createdAt: Date,
     private _updatedAt: Date
   ) {}
@@ -86,6 +94,8 @@ export class QuizEntity {
       props.visibleTo ?? "everyone",
       QuizEntity.mergeUiSettings(props.uiSettings),
       passingScore,
+      props.status ?? "published",
+      1,
       now,
       now
     );
@@ -99,6 +109,8 @@ export class QuizEntity {
       props.visibleTo,
       QuizEntity.mergeUiSettings(props.uiSettings),
       props.passingScore ?? DEFAULT_PASSING_SCORE,
+      props.status ?? "published",
+      props.version ?? 1,
       props.createdAt,
       props.updatedAt
     );
@@ -123,11 +135,32 @@ export class QuizEntity {
   get passingScore(): number {
     return this._passingScore;
   }
+  get status(): QuizStatus {
+    return this._status;
+  }
+  get version(): number {
+    return this._version;
+  }
   get createdAt(): Date {
     return this._createdAt;
   }
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      title: this.title,
+      category: this.category,
+      visibleTo: this.visibleTo,
+      uiSettings: this.uiSettings,
+      passingScore: this.passingScore,
+      status: this.status,
+      version: this.version,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
   }
 
   // ===== Business methods =====
@@ -167,6 +200,14 @@ export class QuizEntity {
       throw new Error("passingScore must be a valid number");
     }
     this._passingScore = Math.max(0, Math.min(100, n));
+    this._updatedAt = new Date();
+  }
+
+  setStatus(status: QuizStatus): void {
+    if (!isQuizStatus(status)) {
+      throw new Error("status must be draft, published, or archived");
+    }
+    this._status = status;
     this._updatedAt = new Date();
   }
 

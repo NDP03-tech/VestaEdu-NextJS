@@ -1,10 +1,25 @@
-/** jest.config.js — Jest config for API tests (uses babel to avoid ts-jest / TS7 conflict) */
+/** Jest config for API tests. */
 module.exports = {
   testEnvironment: "node",
   rootDir: "../../",
   testMatch: ["**/scripts/api-test/**/*.test.ts"],
   transform: {
-    "^.+\\.tsx?$": ["babel-jest", {}],
+    "^.+\\.tsx?$": [
+      "@swc/jest",
+      {
+        jsc: {
+          parser: {
+            syntax: "typescript",
+            decorators: true,
+            dynamicImport: true,
+          },
+          transform: {
+            legacyDecorator: true,
+            decoratorMetadata: true,
+          },
+        },
+      },
+    ],
   },
   reporters: [
     "default",

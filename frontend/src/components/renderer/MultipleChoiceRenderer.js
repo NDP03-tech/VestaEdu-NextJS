@@ -102,7 +102,7 @@ const MultipleChoiceRenderer = ({
 
         return (
           <OptionItem
-            key={option.id || index}
+            key={option.id ?? option.answerIndex ?? index}
             type="radio"
             name={`question-${question.id}`}
             selected={isSelected}

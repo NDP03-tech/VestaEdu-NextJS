@@ -8,6 +8,7 @@ export interface HttpRequest {
 export interface HttpResponse {
   status(code: number): HttpResponse;
   json(body: unknown): void;
+  setHeader?(name: string, value: string): HttpResponse;
 }
 
 export type NextFunction = (error?: unknown) => void;

@@ -80,7 +80,9 @@ const CheckboxesRenderer = ({
     return (
       question?.options
         ?.filter((opt) => opt.isCorrect || opt.is_correct)
-        ?.map((opt) => Number(opt.id)) || []
+        ?.map((opt, index) =>
+          Number(opt.answerIndex ?? opt.id ?? index),
+        ) || []
     );
   }, [correctAnswer, question?.options]);
 
@@ -96,7 +98,7 @@ const CheckboxesRenderer = ({
       questionType="checkboxes"
     >
       {question?.options?.map((option, index) => {
-        const optId = Number(option.id || index);
+        const optId = Number(option.answerIndex ?? option.id ?? index);
         const isSelected = userAnswers.includes(optId);
         const letter = String.fromCharCode(65 + index);
 

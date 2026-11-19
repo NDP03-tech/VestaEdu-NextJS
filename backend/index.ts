@@ -18,6 +18,8 @@ import {
   createCrudRouter,
   type CrudRouteOptions,
 } from "./infrastructure/presentation/routes/crud.routes";
+import { createQuestionRouter } from "./infrastructure/presentation/routes/question.routes";
+import { createQuizContentsRouter } from "./infrastructure/presentation/routes/quiz-content.routes";
 import { createPresentationRoutes } from "./infrastructure/presentation/routes";
 import swaggerUi from "swagger-ui-express";
 import { swaggerDocument } from "./infrastructure/presentation/docs/swagger";
@@ -38,6 +40,8 @@ import {
   UpdateInstructorSchema,
   LoginSchema,
   RegisterSchema,
+  AttemptDraftSchema,
+  AttemptSubmitSchema,
 } from "./infrastructure/presentation/validation/schemas";
 const authenticateToken: express.RequestHandler = require(
   path.join(__dirname, "..", "middleware", "authenticateToken"),
@@ -82,6 +86,7 @@ app.use(
     limit: 300,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    skip: (request) => request.path.startsWith("/api/results/temp/"),
   }),
 );
 app.use(express.json({ limit: "50mb" }));
@@ -249,12 +254,24 @@ async function start(): Promise<void> {
   );
   app.use(
     "/api/questions",
+    createQuestionRouter(
+      controllers.question,
+      authenticateToken,
+      authorizeRoles,
+    ),
+  );
+  app.use(
+    "/api/questions",
     authenticateToken,
     authorizeRoles("admin", "teacher"),
     createCrudRouter(controllers.question, {
       createPath: "/",
       ...contentWriteAccess,
     }),
+  );
+  app.use(
+    "/api/quizzes",
+    createQuizContentsRouter(controllers.quiz, authenticateToken, authorizeRoles),
   );
   app.use(
     "/api/quizzes",
@@ -361,10 +378,27 @@ async function start(): Promise<void> {
   );
   app.post(
     "/api/results/temp/:resultId",
+    rateLimit({
+      windowMs: 60 * 1000,
+      limit: 120,
+      standardHeaders: "draft-7",
+      legacyHeaders: false,
+      keyGenerator: (request) => {
+        const userId = (
+          request as express.Request & { user?: { id?: number } }
+        ).user?.id;
+        if (!Number.isSafeInteger(userId)) {
+          throw new Error("Authenticated user id is required for autosave limiting");
+        }
+        return `user:${userId}`;
+      },
+    }),
+    validateRequest({ body: AttemptDraftSchema }),
     workflows.resultController.tempSave as never,
   );
   app.post(
     "/api/results/submit/:resultId",
+    validateRequest({ body: AttemptSubmitSchema }),
     workflows.resultController.submitAttempt as never,
   );
   app.get(
@@ -424,8 +458,24 @@ async function start(): Promise<void> {
       response: express.Response,
       _next: express.NextFunction,
     ) => {
-      Sentry.captureException(error);
-      response.status(500).json({ message: "Internal server error" });
+      const candidate =
+        typeof error === "object" && error !== null
+          ? (error as { statusCode?: number; name?: string })
+          : {};
+      const statusCode =
+        candidate.statusCode ??
+        (candidate.name?.includes("NotFound")
+          ? 404
+          : candidate.name?.includes("Input")
+            ? 400
+            : 500);
+      if (statusCode >= 500) Sentry.captureException(error);
+      response.status(statusCode).json({
+        message:
+          statusCode < 500 && error instanceof Error
+            ? error.message
+            : "Internal server error",
+      });
     },
   );
 

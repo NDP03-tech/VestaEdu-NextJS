@@ -57,6 +57,12 @@ const SHUFFLE_OPTIONS = [
   { value: "both", label: "Shuffle questions & answers" },
 ];
 
+const QUIZ_STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "published", label: "Published" },
+  { value: "archived", label: "Archived" },
+];
+
 const MESSAGE_EDITORS = [
   { key: "headerText", label: "Header text" },
   { key: "instructionText", label: "Instruction text" },
@@ -137,18 +143,23 @@ const AccordionItem = ({
 /* Main component                                                      */
 /* ------------------------------------------------------------------ */
 
-const QuizInfo = ({ onQuizInfoChange, quizId }) => {
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [uiSettings, setUiSettings] = useState(defaultSettings);
+const QuizInfo = ({ onQuizInfoChange, quizId, quizInfo = {} }) => {
+  const quizVersion = quizInfo.version;
+  const [title, setTitle] = useState(quizInfo.title || "");
+  const [category, setCategory] = useState(quizInfo.category || "");
+  const [uiSettings, setUiSettings] = useState({
+    ...defaultSettings,
+    ...quizInfo.uiSettings,
+  });
 
   const [categories, setCategories] = useState([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
 
-  const [visibleTo, setVisibleTo] = useState("everyone");
+  const [visibleTo, setVisibleTo] = useState(quizInfo.visibleTo || "everyone");
+  const [status, setStatus] = useState(quizInfo.status || "published");
   const [availableClasses, setAvailableClasses] = useState([]);
-  const [assignedClasses, setAssignedClasses] = useState([]);
+  const [assignedClasses, setAssignedClasses] = useState(quizInfo.classes || []);
 
   const [activePanels, setActivePanels] = useState([]);
 
@@ -165,32 +176,25 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
   /* ----------------------------- Effects ----------------------------- */
 
   useEffect(() => {
-    if (!quizId) return;
-    axios
-      .get(`${config.API_URL}/api/quizzes/${quizId}`)
-      .then((response) => {
-        const quiz = response.data;
-        setTitle(quiz.title || "");
-        setCategory(quiz.category || "");
-        setUiSettings({ ...defaultSettings, ...quiz.uiSettings });
-        const hasClasses = quiz.classes && quiz.classes.length > 0;
-        setVisibleTo(quiz.visibleTo || (hasClasses ? "classes" : "everyone"));
-        setAssignedClasses(quiz.classes || []);
-      })
-      .catch((error) => {
-        console.error("Error fetching quiz:", error);
-      });
-  }, [quizId]);
-
-  useEffect(() => {
     onQuizInfoChange({
       title,
       category,
       uiSettings,
       visibleTo,
+      status,
       classes: assignedClasses,
+      version: quizVersion,
     });
-  }, [title, category, uiSettings, visibleTo, assignedClasses]);
+  }, [
+    title,
+    category,
+    uiSettings,
+    visibleTo,
+    status,
+    assignedClasses,
+    quizVersion,
+    onQuizInfoChange,
+  ]);
 
   useEffect(() => {
     axios
@@ -269,6 +273,15 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter your quiz title..."
           />
+        </Field>
+        <Field label="Publication status">
+          <Select value={status} onChange={setStatus}>
+            {QUIZ_STATUS_OPTIONS.map((option) => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
+          </Select>
         </Field>
 
         <Field label="Category">

@@ -49,7 +49,7 @@ const QuizManage = () => {
     setLoading(true);
     try {
       const res = await axios.get(`${config.API_URL}/api/quizzes`);
-      setQuizzes(res.data);
+      setQuizzes(res.data?.data ?? res.data);
     } catch (err) {
       console.error("❌ Error fetching quizzes", err);
       message.error("Lỗi khi tải danh sách quiz");
@@ -95,7 +95,7 @@ const QuizManage = () => {
       }
 
       const data = await res.json();
-      const createdQuizId = data.id;
+      const createdQuizId = data.data?.id ?? data.id;
       message.success("Quiz created successfully!");
       navigate(`/admin/quiz-builder/${createdQuizId}`);
     } catch (err) {
@@ -120,7 +120,9 @@ const QuizManage = () => {
       onOk: async () => {
         try {
           await axios.delete(`${config.API_URL}/api/quizzes/${id}`);
-          message.success("Đã xoá quiz thành công");
+          message.success(
+            "Đã xử lý quiz. Quiz có lịch sử làm bài sẽ được lưu trữ thay vì xoá.",
+          );
           fetchQuizzes();
         } catch (err) {
           console.error("❌ Error deleting quiz", err);
@@ -143,7 +145,9 @@ const QuizManage = () => {
           await Promise.all(
             selectedQuizzes.map((id) => axios.delete(`${config.API_URL}/api/quizzes/${id}`))
           );
-          message.success("Đã xoá các quiz được chọn");
+          message.success(
+            "Đã xử lý các quiz. Quiz có lịch sử làm bài sẽ được lưu trữ.",
+          );
           fetchQuizzes();
           setSelectedQuizzes([]);
         } catch (err) {
@@ -244,6 +248,17 @@ const QuizManage = () => {
       render: (category) => (
         <Tag color="blue" style={{ fontSize: 13, padding: "4px 12px" }}>
           {category}
+        </Tag>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      align: "center",
+      render: (status = "published") => (
+        <Tag color={status === "published" ? "green" : status === "draft" ? "gold" : "default"}>
+          {status}
         </Tag>
       ),
     },

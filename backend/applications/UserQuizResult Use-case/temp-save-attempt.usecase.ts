@@ -6,11 +6,12 @@ export class TempSaveAttemptUseCase {
   async execute(
     resultId: string | number,
     answers: RawAttemptAnswer[],
+    state?: Record<string, unknown>,
   ): Promise<void> {
     const key = normalizeEntityId(resultId, "UserQuizResult");
     const result = await this.repository.getById(key);
     if (!result) throw new Error(`UserQuizResult ${key} not found`);
-    result.tempSave(answers);
+    result.tempSave(answers, state);
     await this.repository.update(key, result);
   }
 }

@@ -1,4 +1,8 @@
-import { QuizEntity, type QuizUiSettings } from "../../domain/entities";
+import {
+  isQuizStatus,
+  QuizEntity,
+  type QuizUiSettings,
+} from "../../domain/entities";
 import { Quiz } from "../persistence/Quiz";
 
 export class QuizMapper {
@@ -22,6 +26,8 @@ export class QuizMapper {
       visibleTo: orm.visibleTo,
       uiSettings,
       passingScore: orm.passingScore,
+      status: isQuizStatus(orm.status) ? orm.status : "published",
+      version: orm.version,
       createdAt: orm.createdAt,
       updatedAt: orm.updatedAt,
     });
@@ -34,6 +40,8 @@ export class QuizMapper {
     orm.category = quiz.category;
     orm.visibleTo = quiz.visibleTo;
     orm.passingScore = quiz.passingScore;
+    orm.status = quiz.status;
+    orm.version = quiz.version;
     orm.uiSettings = quiz.uiSettings;
     orm.createdAt = quiz.createdAt;
     orm.updatedAt = quiz.updatedAt;

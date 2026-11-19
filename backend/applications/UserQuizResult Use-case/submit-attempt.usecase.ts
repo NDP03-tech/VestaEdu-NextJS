@@ -1,4 +1,5 @@
 import type { userQuizResultRepository } from "../../domain/repositories/user-quiz-result.repository.interface";
+import type { UserQuizResultEntity } from "../../domain/entities";
 import type {
   AttemptDomainQueries,
   RawAttemptAnswer,
@@ -12,7 +13,7 @@ export class SubmitAttemptUseCase {
   async execute(
     resultId: string | number,
     answers: RawAttemptAnswer[],
-  ): Promise<void> {
+  ): Promise<UserQuizResultEntity> {
     const key = normalizeEntityId(resultId, "UserQuizResult");
     const result = await this.results.getById(key);
     if (!result) throw new Error(`UserQuizResult ${key} not found`);
@@ -24,5 +25,6 @@ export class SubmitAttemptUseCase {
       quiz.passingScore,
     );
     await this.results.update(key, result);
+    return result;
   }
 }

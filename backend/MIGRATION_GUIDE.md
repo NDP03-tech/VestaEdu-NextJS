@@ -1,5 +1,12 @@
 # MongoDB to MySQL Migration Guide
 
+> The current API runtime uses PostgreSQL through TypeORM. For the local Docker
+> stack, set `DB_PASSWORD` in the shell or a root `.env` file before running
+> `docker compose up`. The Compose stack provides PostgreSQL and Redis; use
+> `DB_POOL_MAX` to size the API connection pool within the database's
+> connection budget. The MySQL/Sequelize guidance below is retained for legacy
+> migration reference and does not describe the current API runtime.
+
 This guide will help you migrate your application from MongoDB to MySQL using Sequelize.
 
 ## Prerequisites

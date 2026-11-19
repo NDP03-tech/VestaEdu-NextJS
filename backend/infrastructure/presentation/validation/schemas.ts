@@ -74,3 +74,35 @@ export const RegisterSchema = z.object({
   role: z.enum(["admin", "teacher", "student"]).optional(),
 });
 
+const AttemptAnswerSchema = z.union([
+  z
+    .object({
+      questionId: z.number().int().positive(),
+      answer: z.unknown(),
+    })
+    .passthrough()
+    .refine((value) => Object.prototype.hasOwnProperty.call(value, "answer"), {
+      message: "answer is required",
+    })
+    .transform(({ questionId, answer }) => ({ questionId, answer })),
+  z
+    .object({
+      question: z.number().int().positive(),
+      answer: z.unknown(),
+    })
+    .passthrough()
+    .refine((value) => Object.prototype.hasOwnProperty.call(value, "answer"), {
+      message: "answer is required",
+    })
+    .transform(({ question, answer }) => ({ questionId: question, answer })),
+]);
+
+export const AttemptDraftSchema = z.object({
+  answers: z.array(AttemptAnswerSchema),
+  state: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const AttemptSubmitSchema = z.object({
+  answers: z.array(AttemptAnswerSchema),
+});
+

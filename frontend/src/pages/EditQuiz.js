@@ -2,42 +2,44 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../config";
+import questionService from "../services/questionService";
 const EditQuiz = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ title: "", description: "" });
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    version: 1,
+  });
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Lấy dữ liệu quiz theo ID
-  const fetchQuiz = async () => {
-    try {
-      // 1. Lấy quiz info
-      const res = await axios.get(`${config.API_URL}/api/quizzes/${id}`);
-      setForm({
-        title: res.data.title || "",
-        description: res.data.description || "",
-      });
-  
-      // 2. Lấy danh sách câu hỏi theo quizId
-      const questionRes = await axios.get(`${config.API_URL}/api/questions/by-quiz/${id}`);
-      console.log("📦 Questions:", questionRes.data);
-      setQuestions(questionRes.data); // <-- Gán mảng câu hỏi từ API này
-  
-    } catch (err) {
-      console.error("❌ Lỗi khi tải quiz hoặc câu hỏi", err);
-      alert("Không tìm thấy quiz hoặc câu hỏi!");
-      navigate("/quiz-manage");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-
   useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const res = await axios.get(`${config.API_URL}/api/quizzes/${id}`);
+        const quiz = res.data?.data ?? res.data;
+        setForm({
+          title: quiz.title || "",
+          description: quiz.description || "",
+          version: quiz.version,
+        });
+
+        const fetchedQuestions =
+          await questionService.getQuestionsByQuizId(id);
+        setQuestions(fetchedQuestions);
+      } catch (err) {
+        console.error("❌ Lỗi khi tải quiz hoặc câu hỏi", err);
+        alert("Không tìm thấy quiz hoặc câu hỏi!");
+        navigate("/quiz-manage");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchQuiz();
-  }, [id]);
+  }, [id, navigate]);
 
   // Xử lý thay đổi input quiz
   const handleInput = (e) => {
@@ -67,7 +69,10 @@ const EditQuiz = () => {
       navigate("/quiz-manage");
     } catch (err) {
       console.error("❌ Lỗi khi cập nhật quiz", err);
-      alert("Không thể cập nhật quiz.");
+      alert(
+        err.response?.data?.message ||
+          "Không thể cập nhật quiz.",
+      );
     }
   };
 

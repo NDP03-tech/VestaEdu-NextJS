@@ -82,6 +82,7 @@ export function createTypeOrmRepositories() {
     quizzes: new QuizRepository(
       DataSourceConfig.getRepository(Quiz),
       DataSourceConfig.getRepository(Question),
+      DataSourceConfig,
     ),
     refreshTokens: new RefreshTokenRepository(
       DataSourceConfig.getRepository(RefreshToken),
