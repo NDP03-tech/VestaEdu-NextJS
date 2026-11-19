@@ -1,4 +1,5 @@
 export * from "./user-quiz-result.use-case.interface";
+export * from "./user-quiz-result.exceptions";
 export { CreateUserQuizResultUseCase } from "./create-user-quiz-result.usecase";
 export {
   GetUserQuizResultByIdUseCase,

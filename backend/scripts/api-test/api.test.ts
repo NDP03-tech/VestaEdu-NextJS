@@ -16,6 +16,7 @@ const { app, quizContentsUseCase, repos } = buildTestApp();
 const adminToken   = makeToken("admin");
 const teacherToken = makeToken("teacher");
 const studentToken = makeToken("student");
+const otherStudentToken = makeToken("student", 2);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -736,10 +737,22 @@ describe("Quiz Results API", () => {
     expect(res.status).toBe(200);
   });
 
+  test("POST /api/results/temp/abc-result-uuid — another student → 403", async () => {
+    const res = await request(app).post("/api/results/temp/abc-result-uuid")
+      .set(auth(otherStudentToken)).send({ answers: [] });
+    expect(res.status).toBe(403);
+  });
+
   test("POST /api/results/submit/abc-result-uuid — auth → 200", async () => {
     const res = await request(app).post("/api/results/submit/abc-result-uuid")
       .set(auth(studentToken)).send({ answers: [] });
     expect(res.status).toBe(200);
+  });
+
+  test("POST /api/results/submit/abc-result-uuid — another student → 403", async () => {
+    const res = await request(app).post("/api/results/submit/abc-result-uuid")
+      .set(auth(otherStudentToken)).send({ answers: [] });
+    expect(res.status).toBe(403);
   });
 
   test("GET /api/results/latest/1 — auth → 200", async () => {
@@ -772,19 +785,56 @@ describe("Quiz Results API", () => {
     expect(res.status).toBe(200);
   });
 
+  test("GET /api/results/user/1/quiz/1/best-attempt — own student → 200, other student → 403", async () => {
+    const own = await request(app)
+      .get("/api/results/user/1/quiz/1/best-attempt")
+      .set(auth(studentToken));
+    const other = await request(app)
+      .get("/api/results/user/2/quiz/1/best-attempt")
+      .set(auth(studentToken));
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(403);
+  });
+
   test("GET /api/results/user-summary/1 — teacher → 200", async () => {
     const res = await request(app).get("/api/results/user-summary/1").set(auth(teacherToken));
     expect(res.status).toBe(200);
   });
 
-  test("GET /api/results/best-attempts/1 — auth → 200", async () => {
+  test("GET /api/results/user-summary/1 — own student → 200, other student → 403", async () => {
+    const own = await request(app)
+      .get("/api/results/user-summary/1")
+      .set(auth(studentToken));
+    const other = await request(app)
+      .get("/api/results/user-summary/2")
+      .set(auth(studentToken));
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(403);
+  });
+
+  test("GET /api/results/best-attempts/1 — admin → 200, student → 403", async () => {
+    const admin = await request(app)
+      .get("/api/results/best-attempts/1")
+      .set(auth(adminToken));
     const res = await request(app).get("/api/results/best-attempts/1").set(auth(studentToken));
-    expect(res.status).toBe(200);
+    expect(admin.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   test("GET /api/results/user-best-attempts/1 — admin → 200", async () => {
     const res = await request(app).get("/api/results/user-best-attempts/1").set(auth(adminToken));
     expect(res.status).toBe(200);
+  });
+
+  test("GET /api/results/user-best-attempts/1 — own student → 200, other student → 403", async () => {
+    const own = await request(app)
+      .get("/api/results/user-best-attempts/1")
+      .set(auth(studentToken));
+    const other = await request(app)
+      .get("/api/results/user-best-attempts/2")
+      .set(auth(studentToken));
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(403);
   });
 });
 

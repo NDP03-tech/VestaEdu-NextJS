@@ -420,21 +420,22 @@ async function start(): Promise<void> {
   );
   app.get(
     "/api/results/user/:userId/quiz/:quizId/best-attempt",
-    authorizeRoles("admin", "teacher"),
+    selfOrStaff,
     workflows.resultController.getUserQuizBestAttempt as never,
   );
   app.get(
     "/api/results/user-summary/:userId",
-    authorizeRoles("admin", "teacher"),
+    selfOrStaff,
     workflows.resultController.getUserQuizSummaryByUserId as never,
   );
   app.get(
     "/api/results/best-attempts/:quizId",
+    authorizeRoles("admin", "teacher"),
     workflows.resultController.getBestAttemptsByQuiz as never,
   );
   app.get(
     "/api/results/user-best-attempts/:userId",
-    authorizeRoles("admin", "teacher"),
+    selfOrStaff,
     workflows.resultController.getBestAttemptsByUserId as never,
   );
 

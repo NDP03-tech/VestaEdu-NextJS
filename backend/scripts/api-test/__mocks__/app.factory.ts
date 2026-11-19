@@ -43,9 +43,12 @@ import { CreateEventRegistrationUseCase, DeleteEventRegistrationUseCase,
   UpdateEventRegistrationUseCase } from "../../../applications/EventRegistration Use-case";
 
 // ─── JWT helpers ──────────────────────────────────────────────────────────────
-export function makeToken(role: "admin" | "teacher" | "student" = "admin"): string {
+export function makeToken(
+  role: "admin" | "teacher" | "student" = "admin",
+  userId = 1,
+): string {
   return jwt.sign(
-    { id: 1, email: `${role}@test.com`, role, firstName: role, lastName: "User" },
+    { id: userId, email: `${role}@test.com`, role, firstName: role, lastName: "User" },
     TEST_JWT_SECRET,
     { expiresIn: "1h" }
   );
@@ -78,12 +81,28 @@ function buildAuthorizeRoles(...roles: string[]): RequestHandler {
   };
 }
 
+function buildSelfOrStaff(): RequestHandler {
+  return (req, res, next) => {
+    const user = (req as unknown as { user?: { id?: number; role?: string } }).user;
+    if (
+      user?.role === "admin" ||
+      user?.role === "teacher" ||
+      user?.id === Number(req.params.userId)
+    ) {
+      next();
+      return;
+    }
+    res.status(403).json({ message: "You cannot access another user's data" });
+  };
+}
+
 // ─── Build app ────────────────────────────────────────────────────────────────
 export function buildTestApp() {
   process.env.ACCESS_TOKEN_SECRET = TEST_JWT_SECRET;
 
   const authenticateToken = buildAuthMiddleware();
   const authorizeRoles = buildAuthorizeRoles;
+  const selfOrStaff = buildSelfOrStaff();
 
   const contentWrite = {
     createMiddleware: [authenticateToken, authorizeRoles("admin", "teacher")],
@@ -362,17 +381,25 @@ export function buildTestApp() {
 
   // ─── Quiz results routes ────────────────────────────────────────────────────
   app.use("/api/results", authenticateToken);
+  const ownsAttempt: RequestHandler = (req, res, next) => {
+    const user = (req as unknown as { user?: { id?: number } }).user;
+    if (user?.id === MOCK_RESULT.userId) {
+      next();
+      return;
+    }
+    res.status(403).json({ message: "You cannot modify another user's attempt" });
+  };
   app.post("/api/results/start/:quizId", (req, res) => res.status(201).json({ data: MOCK_RESULT.toJSON() }));
-  app.post("/api/results/temp/:resultId", (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
-  app.post("/api/results/submit/:resultId", (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
+  app.post("/api/results/temp/:resultId", ownsAttempt, (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
+  app.post("/api/results/submit/:resultId", ownsAttempt, (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
   app.get("/api/results/latest/:quizId", (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
   app.get("/api/results/attempts/:quizId", (req, res) => res.status(200).json({ data: [MOCK_RESULT.toJSON()] }));
   app.get("/api/results/user/results-stats", (req, res) => res.status(200).json({ data: { total: 1, passed: 1 } }));
   app.get("/api/results/quiz/:quizId/best-attempts", authorizeRoles("admin", "teacher"), (req, res) => res.status(200).json({ data: [] }));
-  app.get("/api/results/user/:userId/quiz/:quizId/best-attempt", authorizeRoles("admin", "teacher"), (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
-  app.get("/api/results/user-summary/:userId", authorizeRoles("admin", "teacher"), (req, res) => res.status(200).json({ data: [] }));
-  app.get("/api/results/best-attempts/:quizId", (req, res) => res.status(200).json({ data: [] }));
-  app.get("/api/results/user-best-attempts/:userId", authorizeRoles("admin", "teacher"), (req, res) => res.status(200).json({ data: [] }));
+  app.get("/api/results/user/:userId/quiz/:quizId/best-attempt", selfOrStaff, (req, res) => res.status(200).json({ data: MOCK_RESULT.toJSON() }));
+  app.get("/api/results/user-summary/:userId", selfOrStaff, (req, res) => res.status(200).json({ data: [] }));
+  app.get("/api/results/best-attempts/:quizId", authorizeRoles("admin", "teacher"), (req, res) => res.status(200).json({ data: [] }));
+  app.get("/api/results/user-best-attempts/:userId", selfOrStaff, (req, res) => res.status(200).json({ data: [] }));
 
   // ─── Dashboard & assigned quizzes ──────────────────────────────────────────
   app.get("/api/assigned-quizzes", authenticateToken, (_req, res) => res.status(200).json({ data: [MOCK_QUIZ.toJSON()] }));

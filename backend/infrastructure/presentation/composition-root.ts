@@ -392,6 +392,7 @@ export function createWorkflowControllers() {
       };
       return new TempSaveAttemptUseCase(repositories.results).execute(
         request.params.resultId ?? "",
+        Number((request.user as { id?: number })?.id),
         body.answers ?? [],
         body.state,
       );
@@ -400,6 +401,7 @@ export function createWorkflowControllers() {
       const body = (request.body ?? {}) as { answers?: RawAnswerInput[] };
       return new SubmitAttemptUseCase(repositories.results, attemptQueries).execute(
         request.params.resultId ?? "",
+        Number((request.user as { id?: number })?.id),
         body.answers ?? [],
       );
     },
