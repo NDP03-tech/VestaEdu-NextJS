@@ -1,0 +1,244 @@
+/* =====================================================================
+   IELTS UTILITIES v2  →  src/styles/ielts-utilities.css
+   ===================================================================== */
+
+/* ---------- Base ---------- */
+body { background: var(--surface-page); color: var(--text-primary); font-family: var(--font-ui); }
+::selection { background: var(--selection-bg); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------- 1. Split layout ---------- */
+.ielts-split-layout {
+  display: grid;
+  grid-template-columns: var(--split-ratio);
+  height: calc(100dvh - var(--header-h) - var(--footer-h));   /* dvh: đúng trên mobile browser */
+  overflow: hidden;
+}
+.ielts-split-layout > * { min-width: 0; }                      /* tránh grid bị tràn bởi nội dung dài */
+
+.ielts-pane {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--pane-padding-y) var(--pane-padding-x);
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  border-inline-end: 1px solid var(--border-subtle);
+}
+.ielts-pane:last-child { border-inline-end: 0; }
+.ielts-pane--passage  { background: var(--surface-passage); }  /* nền phủ cả pane, không chỉ cột 68ch */
+.ielts-pane--question { background: var(--surface-question); }
+
+.ielts-divider-handle {
+  width: 6px; cursor: col-resize; background: var(--divider-handle);
+  transition: background var(--duration-fast);
+}
+.ielts-divider-handle:hover, .ielts-divider-handle:focus-visible { background: var(--brand-primary); }
+
+@media (max-width: 1023px) {          /* tablet/mobile: chuyển sang tab Passage | Questions */
+  .ielts-split-layout { grid-template-columns: 1fr; }
+  .ielts-pane { padding: 1.25rem 1rem; }
+  .ielts-pane[hidden] { display: none; }
+  .ielts-divider-handle { display: none; }
+}
+
+/* ---------- 2. Passage ---------- */
+.ielts-passage-body {
+  color: var(--text-primary);
+  font-family: var(--font-passage);
+  font-size: var(--passage-font-size);
+  line-height: var(--passage-line-height);
+  letter-spacing: var(--passage-letter-spacing);
+  max-width: var(--passage-max-width);
+  margin-inline: auto;
+  hyphens: manual;                    /* không tự ngắt từ: tránh làm sai từ khi thí sinh tìm đáp án */
+  text-wrap: pretty;
+}
+.ielts-passage-body p + p { margin-top: var(--passage-paragraph-gap); }
+.ielts-paragraph-label {              /* nhãn A, B, C… cho Matching Headings / Information */
+  font: var(--weight-bold) var(--text-sm) var(--font-ui);
+  color: var(--brand-primary); margin-inline-end: .5rem;
+}
+.ielts-text-sm { --passage-font-size: .9375rem; }
+.ielts-text-md { --passage-font-size: 1.0625rem; }
+.ielts-text-lg { --passage-font-size: 1.25rem; }
+.ielts-text-xl { --passage-font-size: 1.5rem; }
+
+/* ---------- 3. Highlight & note ---------- */
+.ielts-hl { color: var(--highlight-text); border-radius: 2px; padding: 0 1px;
+            -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.ielts-hl[data-color="yellow"] { background: var(--highlight-yellow); }
+.ielts-hl[data-color="green"]  { background: var(--highlight-green); }
+.ielts-hl[data-color="blue"]   { background: var(--highlight-blue); }
+.ielts-hl[data-color="pink"]   { background: var(--highlight-pink); }
+.ielts-hl[data-has-note="true"]::after {
+  content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 2px;
+  border-radius: 50%; background: var(--note-marker); vertical-align: super;
+}
+.ielts-hl-toolbar {                   /* popover hiện khi bôi đen chữ */
+  position: absolute; z-index: var(--z-dropdown); display: flex; gap: var(--space-2);
+  padding: var(--space-2); background: var(--surface-raised);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+}
+
+/* ---------- 4. Instructions & question blocks ---------- */
+.ielts-instructions {
+  background: var(--surface-sunken); color: var(--text-secondary);
+  border-inline-start: 3px solid var(--brand-primary);
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  font-size: var(--text-sm); line-height: 1.6;
+}
+.ielts-instructions strong { color: var(--text-primary); }   /* "NO MORE THAN TWO WORDS" */
+.ielts-question-group + .ielts-question-group { margin-top: var(--space-8); }
+.ielts-question-number {
+  display: inline-flex; min-width: 1.75rem; height: 1.75rem; align-items: center; justify-content: center;
+  border-radius: var(--radius-full); background: var(--brand-primary-soft); color: var(--brand-primary);
+  font-weight: var(--weight-bold); font-size: var(--text-sm);
+}
+
+/* ---------- 5. Gap-fill ---------- */
+.ielts-gap-input {
+  display: inline-block; min-width: 140px; padding: 2px 10px; margin: 0 4px;
+  border: 1.5px solid var(--q-unanswered-border); border-radius: var(--radius-md);
+  background: var(--surface-question); color: var(--text-primary);
+  font: var(--weight-semibold) 1em var(--font-ui); text-align: center;
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+.ielts-gap-input::placeholder { color: var(--text-muted); font-weight: var(--weight-regular); }
+.ielts-gap-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--focus-ring); }
+.ielts-gap-input:disabled { background: var(--option-disabled-bg); color: var(--text-disabled); }
+.ielts-gap-input[data-filled="true"] { border-color: var(--brand-primary); }
+
+.ielts-gap-input--correct { background: var(--result-correct-bg); border-color: var(--result-correct-border); color: var(--result-correct-text); }
+.ielts-gap-input--correct::after { content: " ✓"; }
+.ielts-gap-input--wrong   { background: var(--result-wrong-bg); border-color: var(--result-wrong-border); color: var(--result-wrong-text); text-decoration: line-through; }
+.ielts-gap-input--unanswered { background: var(--result-unanswered-bg); border-style: dashed; color: var(--result-unanswered-text); }
+
+.ielts-answer-key {                    /* đáp án đúng hiện cạnh ô sai / bỏ trống ở chế độ Review */
+  display: inline-block; margin-inline-start: var(--space-2); padding: 1px 8px;
+  border-radius: var(--radius-md); background: var(--result-key-bg); color: var(--result-key-text);
+  font: var(--weight-semibold) var(--text-sm) var(--font-ui);
+}
+.ielts-answer-key::before { content: "✓ "; }
+
+/* ---------- 6. Multiple choice / TFNG / Matching ---------- */
+.ielts-option {
+  display: flex; gap: var(--space-3); align-items: flex-start; width: 100%;
+  padding: var(--space-3) var(--space-4); background: var(--option-bg);
+  border: 1.5px solid var(--option-border); border-radius: var(--radius-lg);
+  color: var(--text-primary); text-align: start; cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+.ielts-option:hover { background: var(--option-hover-bg); }
+.ielts-option[aria-checked="true"], .ielts-option[data-selected="true"] {
+  background: var(--option-selected-bg); border-color: var(--option-selected-border);
+}
+.ielts-option[aria-disabled="true"] { background: var(--option-disabled-bg); color: var(--text-disabled); cursor: not-allowed; }
+.ielts-option--correct { background: var(--result-correct-bg); border-color: var(--result-correct-border); color: var(--result-correct-text); }
+.ielts-option--wrong   { background: var(--result-wrong-bg);   border-color: var(--result-wrong-border);   color: var(--result-wrong-text); }
+
+.ielts-tfng { display: inline-flex; gap: var(--space-2); }       /* nhóm nút TRUE / FALSE / NOT GIVEN */
+.ielts-tfng .ielts-option { width: auto; padding: var(--space-2) var(--space-4); font-weight: var(--weight-semibold); }
+
+.ielts-drop-zone {
+  min-width: 120px; min-height: 36px; border: 1.5px dashed var(--drop-zone-border);
+  border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center;
+}
+.ielts-drop-zone[data-over="true"] { background: var(--drop-zone-active-bg); border-color: var(--brand-primary); border-style: solid; }
+.ielts-drag-item { cursor: grab; padding: var(--space-2) var(--space-3); background: var(--surface-raised);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-md); }
+.ielts-drag-item[data-dragging="true"] { box-shadow: var(--drag-item-shadow); cursor: grabbing; }
+
+/* ---------- 7. Question navigator pill ---------- */
+.ielts-q-pill {
+  position: relative; width: var(--pill-size); height: var(--pill-size);
+  border-radius: var(--radius-md); font-size: .8125rem; font-weight: var(--weight-semibold);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--q-unanswered-border); background: var(--q-unanswered-bg); color: var(--q-unanswered-text);
+  cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.ielts-q-pill[data-answered="true"] { background: var(--q-answered-bg); color: var(--q-answered-text); border-color: var(--q-answered-bg); }
+
+/* Flagged đứng một mình */
+.ielts-q-pill[data-flagged="true"] { background: var(--q-flagged-bg); color: var(--q-flagged-text); border-color: var(--q-flagged-border); }
+
+/* Answered + Flagged: giữ nền "đã trả lời", thêm góc cờ → không mất thông tin trả lời */
+.ielts-q-pill[data-answered="true"][data-flagged="true"] {
+  background: var(--q-answered-bg); color: var(--q-answered-text); border-color: var(--q-flagged-border);
+}
+.ielts-q-pill[data-flagged="true"]::after {   /* cue không phụ thuộc màu (cho người lọa sắc) */
+  content: ""; position: absolute; top: -1px; right: -1px; width: 10px; height: 10px;
+  background: var(--q-flag-marker); border-radius: 0 var(--radius-md) 0 100%;
+}
+.ielts-q-pill[data-current="true"] { outline: 2px solid var(--q-current-ring); outline-offset: 2px; }
+
+/* Review mode */
+.ielts-q-pill[data-result="correct"] { background: var(--result-correct-bg); color: var(--result-correct-text); border-color: var(--result-correct-border); }
+.ielts-q-pill[data-result="wrong"]   { background: var(--result-wrong-bg);   color: var(--result-wrong-text);   border-color: var(--result-wrong-border); }
+.ielts-q-pill[data-result="skipped"] { background: var(--result-unanswered-bg); color: var(--result-unanswered-text); border-style: dashed; }
+
+.ielts-q-nav { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.ielts-q-nav-legend { display: flex; gap: var(--space-4); font-size: var(--text-xs); color: var(--text-secondary); }
+
+/* ---------- 8. Header / Timer / Part tabs ---------- */
+.ielts-header { height: var(--header-h); background: var(--surface-header); border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between; padding-inline: var(--space-6);
+  position: sticky; top: 0; z-index: var(--z-sticky); }
+.ielts-footer { height: var(--footer-h); background: var(--surface-header); border-top: 1px solid var(--border-subtle);
+  display: flex; align-items: center; padding-inline: var(--space-4); position: sticky; bottom: 0; z-index: var(--z-sticky); }
+
+.ielts-timer { font: var(--weight-bold) var(--text-lg) var(--font-ui); font-variant-numeric: tabular-nums;
+  padding: var(--space-1) var(--space-3); border-radius: var(--radius-md);
+  background: var(--timer-normal-bg); color: var(--timer-normal-text); }
+.ielts-timer[data-state="warning"] { background: var(--timer-warning-bg); color: var(--timer-warning-text); }
+.ielts-timer[data-state="danger"]  { background: var(--timer-danger-bg);  color: var(--timer-danger-text);
+  animation: ielts-pulse 1s ease-in-out infinite; }
+@keyframes ielts-pulse { 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { .ielts-timer[data-state="danger"] { animation: none; outline: 2px solid currentColor; } }
+
+.ielts-part-tab { padding: var(--space-2) var(--space-4); border-bottom: 2px solid transparent; color: var(--text-secondary); font-weight: var(--weight-medium); }
+.ielts-part-tab[aria-selected="true"] { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
+.ielts-part-tab .ielts-part-progress { font-size: var(--text-xs); color: var(--text-muted); margin-inline-start: var(--space-2); }
+
+/* ---------- 9. Buttons ---------- */
+.ielts-btn { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md); font-weight: var(--weight-semibold); border: 1px solid var(--border-strong);
+  background: var(--surface-raised); color: var(--text-primary); cursor: pointer; min-height: 36px; }
+.ielts-btn--primary { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+.ielts-btn--primary:hover { background: var(--brand-primary-hover); }
+.ielts-btn:disabled { color: var(--text-disabled); background: var(--option-disabled-bg); cursor: not-allowed; }
+
+/* ---------- 10. Modal (Submit confirm, Time-up) ---------- */
+.ielts-modal-backdrop { position: fixed; inset: 0; background: var(--surface-overlay); z-index: var(--z-modal); display: grid; place-items: center; }
+.ielts-modal { background: var(--surface-raised); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  padding: var(--space-6); max-width: 28rem; width: calc(100% - 2rem); }
+.ielts-modal--timeup { z-index: var(--z-timer-alert); }
+
+/* ---------- 11. Writing ---------- */
+.ielts-writing-editor { width: 100%; min-height: 60vh; resize: vertical; padding: var(--space-4);
+  background: var(--surface-question); color: var(--text-primary); border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-lg); font: 1.0625rem/1.7 var(--font-passage); }
+.ielts-writing-editor:focus { border-color: var(--border-focus); box-shadow: var(--focus-ring); outline: none; }
+.ielts-word-count { font: var(--weight-semibold) var(--text-sm) var(--font-ui); font-variant-numeric: tabular-nums; color: var(--wc-over-text); }
+.ielts-word-count[data-state="under"] { color: var(--wc-under-text); }
+.ielts-word-count[data-state="ok"]    { color: var(--wc-ok-text); }
+
+/* ---------- 12. Listening audio ---------- */
+.ielts-audio { display: flex; align-items: center; gap: var(--space-3); }
+.ielts-audio-track { flex: 1; height: 6px; border-radius: var(--radius-full); background: var(--audio-track); overflow: hidden; }
+.ielts-audio-progress { height: 100%; width: var(--progress, 0%); background: var(--audio-progress); }
+
+/* ---------- 13. Result summary ---------- */
+.ielts-band { display: inline-flex; padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); font-weight: var(--weight-bold); }
+.ielts-band[data-level="low"]  { background: var(--band-low-bg);  color: var(--band-low-text); }
+.ielts-band[data-level="mid"]  { background: var(--band-mid-bg);  color: var(--band-mid-text); }
+.ielts-band[data-level="high"] { background: var(--band-high-bg); color: var(--band-high-text); }
+
+/* ---------- 14. A11y helpers & print ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media print {
+  :root { --surface-passage:#fff; --surface-question:#fff; }
+  .ielts-header, .ielts-footer, .ielts-divider-handle { display: none; }
+  .ielts-split-layout { display: block; height: auto; }
+  .ielts-pane { height: auto; overflow: visible; }
+}

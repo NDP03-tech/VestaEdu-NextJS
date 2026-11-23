@@ -1,0 +1,241 @@
+/* =====================================================================
+   IELTS TOKENS v2  →  src/styles/ielts-tokens.css
+   Kiến trúc 3 tầng:  1) Primitive (thang màu thô)  2) Semantic (vai trò)
+                      3) Component (exam states)
+   Quy tắc: component/utility CHỈ được dùng tầng 2 và 3, không dùng primitive.
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- 1. PRIMITIVES ---------- */
+  --slate-50:#F8FAFC; --slate-100:#F1F5F9; --slate-200:#E2E8F0; --slate-300:#CBD5E1;
+  --slate-400:#94A3B8; --slate-500:#64748B; --slate-600:#475569; --slate-800:#1E293B; --slate-900:#0F172A;
+  --blue-50:#EFF6FF; --blue-500:#2563EB; --blue-700:#1D4ED8; --blue-800:#1E40AF;
+  --amber-100:#FEF3C7; --amber-500:#F59E0B; --amber-700:#B45309;
+  --green-100:#DCFCE7; --green-500:#22C55E; --green-700:#15803D;
+  --red-100:#FEE2E2; --red-500:#EF4444; --red-700:#B91C1C;
+  --paper:#FCFBF7;
+
+  /* ---------- 2. SEMANTIC: SURFACE / BORDER / TEXT ---------- */
+  --surface-page:     #F8F9FA;
+  --surface-passage:  var(--paper);       /* màu giấy ấm cho bài đọc */
+  --surface-question: #FEFEFC;            /* tránh trắng tinh #FFF toàn màn hình */
+  --surface-header:   #FEFEFC;
+  --surface-raised:   #FFFFFF;            /* popover, dropdown, modal */
+  --surface-overlay:  rgba(15, 23, 42, .55); /* backdrop modal */
+  --surface-sunken:   var(--slate-100);   /* vùng instructions, word bank */
+
+  --border-subtle:  var(--slate-200);
+  --border-strong:  var(--slate-300);
+  --border-focus:   var(--blue-500);
+  --divider-handle: var(--slate-300);     /* thanh kéo chia đôi màn hình */
+
+  --text-primary:   var(--slate-800);
+  --text-secondary: var(--slate-600);
+  --text-muted:     var(--slate-500);     /* #64748B ≈ 4.8:1 (AA). Bản cũ #94A3B8 chỉ ≈ 2.6:1 → trượt WCAG */
+  --text-disabled:  var(--slate-400);     /* chỉ dùng cho control disabled */
+  --text-on-brand:  #FFFFFF;
+  --text-link:      var(--blue-700);
+
+  /* ---------- BRAND ---------- */
+  --brand-primary:       var(--blue-700);
+  --brand-primary-hover: var(--blue-800);
+  --brand-primary-soft:  var(--blue-50);
+
+  /* ---------- Focus ring (bắt buộc cho điều hướng bằng bàn phím) ---------- */
+  --focus-ring-width:  3px;
+  --focus-ring-color:  rgba(37, 99, 235, .35);
+  --focus-ring: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+
+  /* ---------- 3. COMPONENT: QUESTION PALETTE ---------- */
+  --q-unanswered-bg:     var(--slate-100);
+  --q-unanswered-text:   var(--slate-600);
+  --q-unanswered-border: var(--slate-300);
+
+  --q-answered-bg:   var(--blue-700);
+  --q-answered-text: #FFFFFF;
+
+  --q-current-ring:  var(--blue-500);
+
+  --q-flagged-bg:     var(--amber-100);
+  --q-flagged-text:   var(--amber-700);
+  --q-flagged-border: var(--amber-500);
+  --q-flag-marker:    var(--amber-500);   /* góc cờ nhỏ khi vừa answered vừa flagged */
+
+  /* ---------- Lựa chọn (Multiple choice / TFNG / Matching) ---------- */
+  --option-bg:            var(--surface-question);
+  --option-border:        var(--border-strong);
+  --option-hover-bg:      var(--brand-primary-soft);
+  --option-selected-bg:   var(--brand-primary-soft);
+  --option-selected-border: var(--brand-primary);
+  --option-disabled-bg:   var(--slate-100);
+
+  /* Matching / Drag & drop */
+  --drop-zone-border:    var(--slate-400);
+  --drop-zone-active-bg: var(--brand-primary-soft);
+  --drag-item-shadow:    0 6px 16px rgba(15,23,42,.18);
+
+  /* ---------- Chấm điểm / Review ---------- */
+  --result-correct-bg:     var(--green-100);
+  --result-correct-text:   var(--green-700);
+  --result-correct-border: var(--green-500);
+  --result-wrong-bg:       var(--red-100);
+  --result-wrong-text:     var(--red-700);
+  --result-wrong-border:   var(--red-500);
+  --result-key-bg:         var(--green-100);  /* đáp án đúng hiện bên cạnh câu sai */
+  --result-key-text:       var(--green-700);
+  --result-unanswered-bg:  var(--amber-100);  /* bỏ trống khi review (khác "sai") */
+  --result-unanswered-text:var(--amber-700);
+
+  /* Band score (0–9) */
+  --band-low-bg: var(--red-100);   --band-low-text: var(--red-700);     /* < 5.0 */
+  --band-mid-bg: var(--amber-100); --band-mid-text: var(--amber-700);   /* 5.0–6.5 */
+  --band-high-bg: var(--green-100);--band-high-text: var(--green-700);  /* ≥ 7.0 */
+
+  /* ---------- Highlight & Notes (văn bản + chọn bằng chuột) ---------- */
+  --highlight-yellow: #FEF08A;
+  --highlight-green:  #BBF7D0;
+  --highlight-blue:   #BAE6FD;
+  --highlight-pink:   #FBCFE8;
+  --highlight-text:   var(--text-primary);  /* giữ chữ đủ tương phản trên nền highlight */
+  --selection-bg:     rgba(37, 99, 235, .22);
+  --note-marker:      var(--amber-500);     /* chấm nhỏ cạnh đoạn có ghi chú */
+
+  /* ---------- Timer ---------- */
+  --timer-normal-bg:     transparent;
+  --timer-normal-text:   var(--slate-900);
+  --timer-warning-bg:    var(--amber-100);   /* < 10 phút */
+  --timer-warning-text:  var(--amber-700);
+  --timer-danger-bg:     var(--red-100);     /* < 2 phút */
+  --timer-danger-text:   var(--red-700);     /* #DC2626 cũ chỉ ≈ 4.0:1 trên nền đỏ nhạt → dùng #B91C1C */
+
+  /* ---------- Writing: word counter ---------- */
+  --wc-under-text: var(--amber-700);   /* chưa đủ tối thiểu (150 / 250 từ) */
+  --wc-ok-text:    var(--green-700);
+  --wc-over-text:  var(--text-secondary);
+
+  /* ---------- Listening: audio ---------- */
+  --audio-track:    var(--slate-200);
+  --audio-progress: var(--brand-primary);
+
+  /* ---------- 4. TYPOGRAPHY ---------- */
+  --font-ui:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-passage: 'Merriweather', 'Source Serif 4', Georgia, serif;
+  --font-mono:    ui-monospace, 'JetBrains Mono', monospace;
+
+  --passage-font-size:   1.0625rem;  /* 17px */
+  --passage-line-height: 1.8;
+  --passage-max-width:   68ch;
+  --passage-paragraph-gap: 1.25em;
+  --passage-letter-spacing: 0.005em;
+
+  --text-xs: .75rem; --text-sm: .875rem; --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.5rem;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+
+  /* ---------- 5. LAYOUT, SPACING, SHAPE, ELEVATION ---------- */
+  --header-h: 56px;
+  --footer-h: 56px;
+  --pane-padding-y: 2rem;
+  --pane-padding-x: 2.5rem;
+  --split-ratio: 1fr 1fr;            /* JS đổi khi người dùng kéo divider */
+
+  --space-1:.25rem; --space-2:.5rem; --space-3:.75rem; --space-4:1rem; --space-6:1.5rem; --space-8:2rem;
+
+  --radius-sm:4px; --radius-md:6px; --radius-lg:10px; --radius-full:999px;
+
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.10);
+  --shadow-lg: 0 12px 32px rgba(15,23,42,.16);
+
+  --z-base:0; --z-sticky:10; --z-dropdown:20; --z-modal:30; --z-toast:40; --z-timer-alert:50;
+
+  /* ---------- 6. MOTION ---------- */
+  --duration-fast:120ms; --duration-base:180ms; --duration-slow:300ms;
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+
+  /* ---------- 7. TOUCH ---------- */
+  --pill-size: 32px;                 /* desktop */
+}
+
+@media (pointer: coarse) {
+  :root { --pill-size: 44px; }       /* tablet/phone: đủ vùng chạm */
+}
+
+/* =====================================================================
+   DARK MODE (đầy đủ: mọi token đã đổi ở light đều có cặp tương ứng)
+   ===================================================================== */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-page:#0B0F19; --surface-passage:#111827; --surface-question:#161F33;
+  --surface-header:#111827; --surface-raised:#1E293B; --surface-sunken:#0F172A;
+  --surface-overlay: rgba(0,0,0,.65);
+
+  --border-subtle:#1E293B; --border-strong:#334155; --border-focus:#60A5FA; --divider-handle:#334155;
+
+  --text-primary:#E2E8F0; --text-secondary:#A8B5C7; --text-muted:#8190A5; --text-disabled:#556070;
+  --text-link:#93C5FD;
+
+  --brand-primary:#3B82F6; --brand-primary-hover:#60A5FA; --brand-primary-soft:rgba(59,130,246,.14);
+  --focus-ring-color: rgba(96,165,250,.45);
+
+  --q-unanswered-bg:#1E293B; --q-unanswered-text:#A8B5C7; --q-unanswered-border:#334155;
+  --q-answered-bg:#2563EB;   --q-answered-text:#FFFFFF;
+  --q-current-ring:#93C5FD;
+  --q-flagged-bg:rgba(245,158,11,.18); --q-flagged-text:#FCD34D; --q-flagged-border:#F59E0B;
+
+  --option-bg:var(--surface-question); --option-border:#334155;
+  --option-hover-bg:rgba(59,130,246,.12); --option-selected-bg:rgba(59,130,246,.18);
+  --option-selected-border:#60A5FA; --option-disabled-bg:#1E293B;
+  --drop-zone-border:#475569; --drop-zone-active-bg:rgba(59,130,246,.14);
+
+  --result-correct-bg:rgba(34,197,94,.16);  --result-correct-text:#86EFAC; --result-correct-border:#22C55E;
+  --result-wrong-bg:rgba(239,68,68,.16);    --result-wrong-text:#FCA5A5;   --result-wrong-border:#EF4444;
+  --result-key-bg:rgba(34,197,94,.16);      --result-key-text:#86EFAC;
+  --result-unanswered-bg:rgba(245,158,11,.16); --result-unanswered-text:#FCD34D;
+
+  --band-low-bg:rgba(239,68,68,.16);  --band-low-text:#FCA5A5;
+  --band-mid-bg:rgba(245,158,11,.16); --band-mid-text:#FCD34D;
+  --band-high-bg:rgba(34,197,94,.16); --band-high-text:#86EFAC;
+
+  --highlight-yellow:rgba(250,204,21,.32); --highlight-green:rgba(74,222,128,.28);
+  --highlight-blue:rgba(56,189,248,.28);   --highlight-pink:rgba(244,114,182,.28);
+  --highlight-text:#F8FAFC; --selection-bg:rgba(96,165,250,.35);
+
+  --timer-normal-text:#E2E8F0;
+  --timer-warning-bg:rgba(245,158,11,.2); --timer-warning-text:#FCD34D;
+  --timer-danger-bg:rgba(239,68,68,.22);  --timer-danger-text:#FCA5A5;
+
+  --wc-under-text:#FCD34D; --wc-ok-text:#86EFAC; --wc-over-text:#A8B5C7;
+  --audio-track:#334155;
+
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 4px 12px rgba(0,0,0,.5); --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+}
+
+/* =====================================================================
+   HIGH CONTRAST (IELTS thi máy cho đổi tương phản: người thị lực yếu / lọa sắc)
+   ===================================================================== */
+[data-theme="contrast-yellow-on-black"] {
+  color-scheme: dark;
+  --surface-page:#000; --surface-passage:#000; --surface-question:#000; --surface-header:#000;
+  --surface-raised:#0A0A0A; --surface-sunken:#0A0A0A;
+  --border-subtle:#FFE600; --border-strong:#FFE600; --border-focus:#FFFFFF;
+  --text-primary:#FFE600; --text-secondary:#FFE600; --text-muted:#FFE600; --text-on-brand:#000;
+  --brand-primary:#FFE600; --brand-primary-hover:#FFFFFF; --brand-primary-soft:#1A1A00;
+  --q-unanswered-bg:#000; --q-unanswered-text:#FFE600; --q-unanswered-border:#FFE600;
+  --q-answered-bg:#FFE600; --q-answered-text:#000; --q-current-ring:#FFFFFF;
+  --q-flagged-bg:#000; --q-flagged-text:#FFE600; --q-flagged-border:#FFFFFF;
+  --highlight-yellow:#00BFFF; --highlight-green:#00FF7F; --highlight-blue:#00BFFF; --highlight-pink:#FF69B4;
+  --highlight-text:#000;
+}
+
+/* Tự theo hệ điều hành khi người dùng chưa chọn */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { /* dùng JS set data-theme từ lần đầu để tránh nhân đôi khối token */ }
+}
+
+/* Giảm chuyển động theo cài đặt hệ thống */
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast:0ms; --duration-base:0ms; --duration-slow:0ms; }
+}
