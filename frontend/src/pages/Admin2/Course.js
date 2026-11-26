@@ -38,9 +38,10 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import { getId } from "../../utils/idHelper";
+import { unwrapApiData, unwrapApiList } from "../../utils/apiResponse";
+import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import "./AdminCourse.css";
-import config from "../../config";
 const { Title, Text, Paragraph } = Typography;
 
 const AdminCourse = () => {
@@ -90,14 +91,8 @@ const AdminCourse = () => {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/course`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch courses");
-
-      const data = await response.json();
+      const response = await apiClient.get("/api/course");
+      const data = unwrapApiList(response.data);
 
       setCourses(data);
       setFilteredCourses(data);
@@ -114,14 +109,9 @@ const AdminCourse = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${config.API_URL}/api/upload-media`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Upload failed");
-      return data.fileUrl;
+      const response = await apiClient.post("/api/upload-media", formData);
+      const data = unwrapApiData(response.data);
+      return data.url ?? data.fileUrl;
     } catch (err) {
       message.error("Upload failed");
       return null;
@@ -148,11 +138,8 @@ const AdminCourse = () => {
   const handleEdit = async (id) => {
     try {
       setLoading(true);
-      const response = await fetch(`${config.API_URL}/api/course/${id}`);
-
-      if (!response.ok) throw new Error("Failed to fetch course");
-
-      const courseData = await response.json();
+      const response = await apiClient.get(`/api/course/${id}`);
+      const courseData = unwrapApiData(response.data);
 
       setCourseToEdit(courseData);
       setShowModal(true);
@@ -168,16 +155,7 @@ const AdminCourse = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/course/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Delete failed");
+      await apiClient.delete(`/api/course/${id}`);
 
       setCourses((prev) => prev.filter((course) => getId(course) !== id));
       message.success("Course deleted successfully!");
@@ -208,25 +186,10 @@ const AdminCourse = () => {
         createdAt: isEdit ? courseToEdit.createdAt : new Date().toISOString(),
       };
 
-      const url = isEdit
-        ? `${config.API_URL}/api/course/${editingId}`
-        : `${config.API_URL}/api/course/create`;
-
-      const method = isEdit ? "PUT" : "POST";
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedCourse),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save course");
+      if (isEdit) {
+        await apiClient.put(`/api/course/${editingId}`, updatedCourse);
+      } else {
+        await apiClient.post("/api/course/create", updatedCourse);
       }
 
       await fetchCourses();
@@ -244,7 +207,11 @@ const AdminCourse = () => {
       );
     } catch (error) {
       console.error("❌ Submit error:", error);
-      message.error(error.message || "Failed to save course");
+      message.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to save course",
+      );
     } finally {
       setSubmitting(false);
     }

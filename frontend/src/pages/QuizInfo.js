@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Tabs, Tab, TabList, TabPanel } from 'react-tabs';
 import ExplanationEditor from '../Explanation/ExplanationEditor';
 import config from '../config';
+import apiClient from '../services/apiClient';
+import { unwrapApiData, unwrapApiList } from '../utils/apiResponse';
 const defaultSettings = {
     oneQuestionPerPage: false,
     showQuestionNumbers: true,
@@ -31,9 +32,9 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
 
     useEffect(() => {
         if (quizId) {
-            axios.get(`${config.API_URL}/api/quizzes/${quizId}`)
+            apiClient.get(`${config.API_URL}/api/quizzes/${quizId}`)
                 .then(response => {
-                    const quiz = response.data;
+                    const quiz = unwrapApiData(response.data);
                     setTitle(quiz.title || '');
                     setCategory(quiz.category || '');
                     setUiSettings({ ...defaultSettings, ...quiz.uiSettings });
@@ -49,8 +50,8 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
     }, [title, category, uiSettings]);
 
     useEffect(() => {
-        axios.get(`${config.API_URL}/api/categories`)
-            .then(res => setCategories(res.data.map(c => c.name)))
+        apiClient.get(`${config.API_URL}/api/categories`)
+            .then(res => setCategories(unwrapApiList(res.data).map(c => c.name)))
             .catch(err => console.error("Lỗi khi lấy danh mục:", err));
     }, []);
 
@@ -356,10 +357,10 @@ const QuizInfo = ({ onQuizInfoChange, quizId }) => {
         <button
           onClick={async () => {
             try {
-              const res = await axios.post(`${config.API_URL}/api/categories`, {
+              const res = await apiClient.post(`${config.API_URL}/api/categories`, {
                 name: newCategory,
               });
-              const newCat = res.data.name;
+              const newCat = unwrapApiData(res.data).name;
               setCategories((prev) => [...prev, newCat]);
               setCategory(newCat);
               setNewCategory('');

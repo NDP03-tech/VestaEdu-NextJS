@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Dropdown } from "antd";
+import { logout } from "../../services/authService";
 import {
   ClipboardList,
   BarChart3,
@@ -21,7 +22,9 @@ const UserHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    logout().catch(() => undefined);
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     navigate("/login");
   };
 

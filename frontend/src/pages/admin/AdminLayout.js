@@ -18,7 +18,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const AdminLayout = () => {
+const AdminLayout = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -41,7 +41,7 @@ const AdminLayout = () => {
 
   const handleMenuClick = ({ key }) => {
     if (key === "logout") {
-      localStorage.removeItem("token");
+      onLogout?.();
       navigate("/login");
     } else {
       navigate(key);
@@ -73,7 +73,7 @@ const AdminLayout = () => {
 
   const handleUserMenuClick = ({ key }) => {
     if (key === "logout") {
-      localStorage.removeItem("token");
+      onLogout?.();
       navigate("/login");
     }
   };

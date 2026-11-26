@@ -22,9 +22,10 @@ import {
   FileTextOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import config from "../config";
+import apiClient from "../services/apiClient";
+import { unwrapApiData, unwrapApiList } from "../utils/apiResponse";
 const { Title, Text } = Typography;
 const { Search } = Input;
 
@@ -43,8 +44,8 @@ const CategoryPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${config.API_URL}/api/categories`);
-      setCategories(res.data);
+      const res = await apiClient.get(`${config.API_URL}/api/categories`);
+      setCategories(unwrapApiList(res.data));
     } catch (err) {
       message.error("Failed to fetch categories");
     }
@@ -56,8 +57,8 @@ const CategoryPage = () => {
     }
 
     try {
-      const res = await axios.post(`${config.API_URL}/api/categories`, { name: newCategory });
-      setCategories((prev) => [...prev, res.data]);
+      const res = await apiClient.post(`${config.API_URL}/api/categories`, { name: newCategory });
+      setCategories((prev) => [...prev, unwrapApiData(res.data)]);
       setNewCategory("");
       message.success("Category added successfully!");
     } catch (err) {
@@ -68,8 +69,8 @@ const CategoryPage = () => {
   const fetchQuizzesByCategory = async (catName) => {
     setSelectedCategory(catName);
     try {
-      const res = await axios.get(`${config.API_URL}/api/categories/${catName}/quizzes`);
-      setQuizzes(res.data);
+      const res = await apiClient.get(`${config.API_URL}/api/categories/${catName}/quizzes`);
+      setQuizzes(unwrapApiList(res.data));
     } catch (err) {
       message.error("Failed to fetch quizzes.");
     }
@@ -90,7 +91,7 @@ const CategoryPage = () => {
       onOk: async () => {
         try {
           const id = cat._id || cat.id || cat.name;
-          await axios.delete(`${config.API_URL}/api/categories/${id}`);
+          await apiClient.delete(`${config.API_URL}/api/categories/${id}`);
           setCategories((prev) =>
             prev.filter((c) => (c._id || c.id || c.name) !== id)
           );

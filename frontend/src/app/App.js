@@ -95,6 +95,8 @@ const App = () => {
     localStorage.removeItem("role");
     localStorage.removeItem("user");
     logoutRequest().catch(() => undefined);
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     console.log("User logged out:", false);
   };
 

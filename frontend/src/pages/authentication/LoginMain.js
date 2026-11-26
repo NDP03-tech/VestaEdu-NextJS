@@ -20,8 +20,19 @@ const LoginMain = ({ onLogin, setIsLoggedIn }) => {
         email,
         password,
       });
-      localStorage.setItem("role", res.data.user.role);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const loginData = res.data?.data ?? res.data;
+      const user = loginData?.user;
+      if (!loginData?.accessToken || !user?.role) {
+        setMessage("Phản hồi đăng nhập không hợp lệ. Vui lòng thử lại.");
+        return;
+      }
+
+      localStorage.setItem("token", loginData.accessToken);
+      if (loginData.rawRefreshToken) {
+        localStorage.setItem("refreshToken", loginData.rawRefreshToken);
+      }
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("user", JSON.stringify(user));
       setIsLoggedIn(true);
       onLogin();
       setRedirectToDashboard(true);

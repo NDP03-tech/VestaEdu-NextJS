@@ -62,6 +62,76 @@ const uploadToCloudinary = require(
   folder: string,
 ) => Promise<{ secure_url?: string }>;
 
+
+const {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  cookieOptions,
+  getCookie,
+  clearAuthCookies,
+} = require(path.join(__dirname, "..", "utils", "authCookies")) as {
+  ACCESS_COOKIE: string;
+  REFRESH_COOKIE: string;
+  cookieOptions: (maxAge: number) => express.CookieOptions;
+  getCookie: (req: express.Request, name: string) => string | null;
+  clearAuthCookies: (res: express.Response) => void;
+};
+
+const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000; // khớp expiresIn "15m"
+const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // khớp 7 ngày
+
+// Sau login/refresh: gắn token vào cookie httpOnly (FE dựa vào cookie này).
+const setAuthCookiesOnSuccess: express.RequestHandler = (
+  _request,
+  response,
+  next,
+) => {
+  const originalJson = response.json.bind(response);
+  response.json = ((body: any) => {
+    const data = body?.data;
+    if (response.statusCode === 200 && data?.accessToken) {
+      response.cookie(
+        ACCESS_COOKIE,
+        data.accessToken,
+        cookieOptions(ACCESS_COOKIE_MAX_AGE),
+      );
+      if (data.rawRefreshToken) {
+        response.cookie(
+          REFRESH_COOKIE,
+          data.rawRefreshToken,
+          cookieOptions(REFRESH_COOKIE_MAX_AGE),
+        );
+      }
+    }
+    return originalJson(body);
+  }) as typeof response.json;
+  next();
+};
+
+// refresh/logout: nếu body không có refreshToken thì lấy từ cookie.
+const refreshTokenFromCookie: express.RequestHandler = (
+  request,
+  _response,
+  next,
+) => {
+  if (!request.body?.refreshToken) {
+    const cookieToken = getCookie(request, REFRESH_COOKIE);
+    if (cookieToken) {
+      request.body = { ...(request.body ?? {}), refreshToken: cookieToken };
+    }
+  }
+  next();
+};
+
+const clearAuthCookiesMiddleware: express.RequestHandler = (
+  _request,
+  response,
+  next,
+) => {
+  clearAuthCookies(response);
+  next();
+};
+
 const app = express();
 const port = Number(process.env.PORT ?? 5000);
 
@@ -294,7 +364,7 @@ async function start(): Promise<void> {
     }),
   );
 
-  app.post("/api/login", validateRequest({ body: LoginSchema }), workflows.userController.login as never);
+  app.post("/api/login", validateRequest({ body: LoginSchema }), setAuthCookiesOnSuccess, workflows.userController.login as never);
   app.post("/api/register", validateRequest({ body: RegisterSchema }), workflows.userController.register as never);
   app.post(
     "/api/create-admin",
@@ -326,8 +396,8 @@ async function start(): Promise<void> {
     authorizeRoles("admin"),
     workflows.userController.deleteUser as never,
   );
-  app.post("/api/refresh", workflows.userController.refresh as never);
-  app.post("/api/logout", workflows.userController.logout as never);
+  app.post("/api/refresh", refreshTokenFromCookie, setAuthCookiesOnSuccess, workflows.userController.refresh as never);
+  app.post("/api/logout", refreshTokenFromCookie, clearAuthCookiesMiddleware, workflows.userController.logout as never);
   app.get("/api/me", authenticateToken, workflows.userController.me as never);
   app.post(
     "/api/upload-media",

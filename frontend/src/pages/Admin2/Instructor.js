@@ -36,6 +36,8 @@ import {
 
 import config from "../../config";
 import RichTextEditor from "../../components/Editor/RichTextEditor";
+import apiClient from "../../services/apiClient";
+import { unwrapApiData, unwrapApiList } from "../../utils/apiResponse";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -69,9 +71,8 @@ const AdminInstructor = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${config.API_URL}/api/instructors`);
-      const json = await res.json();
-      const arr = json.data || json;
+      const res = await apiClient.get(`${config.API_URL}/api/instructors`);
+      const arr = unwrapApiList(res.data);
       setData(arr);
       setFiltered(arr);
     } catch {
@@ -86,13 +87,9 @@ const AdminInstructor = () => {
     const fd = new FormData();
     fd.append("file", file);
 
-    const res = await fetch(`${config.API_URL}/api/upload-media`, {
-      method: "POST",
-      body: fd,
-    });
-
-    const data = await res.json();
-    return data.fileUrl;
+    const res = await apiClient.post(`${config.API_URL}/api/upload-media`, fd);
+    const data = unwrapApiData(res.data);
+    return data.url ?? data.fileUrl;
   };
 
   const handleUpload = async ({ file, onSuccess, onError }) => {
@@ -115,11 +112,11 @@ const AdminInstructor = () => {
         ? `${config.API_URL}/api/instructors/${editingId}`
         : `${config.API_URL}/api/instructors`;
 
-      await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      if (method === "PUT") {
+        await apiClient.put(url, values);
+      } else {
+        await apiClient.post(url, values);
+      }
 
       message.success("Saved!");
       fetchData();
@@ -135,9 +132,8 @@ const AdminInstructor = () => {
   };
 
   const handleEdit = async (id) => {
-    const res = await fetch(`${config.API_URL}/api/instructors/${id}`);
-    const json = await res.json();
-    const item = json.data || json;
+    const res = await apiClient.get(`${config.API_URL}/api/instructors/${id}`);
+    const item = unwrapApiData(res.data);
 
     form.setFieldsValue(item);
     setBioContent(item.bio || "");
@@ -146,9 +142,7 @@ const AdminInstructor = () => {
   };
 
   const handleDelete = async (id) => {
-    await fetch(`${config.API_URL}/api/instructors/${id}`, {
-      method: "DELETE",
-    });
+    await apiClient.delete(`${config.API_URL}/api/instructors/${id}`);
     fetchData();
   };
 

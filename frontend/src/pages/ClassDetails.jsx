@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from "../services/apiClient";
 import {
   UserAddOutlined,
   DeleteOutlined,
@@ -38,6 +38,7 @@ import {
   Popconfirm,
 } from "antd";
 import config from "../config";
+import { unwrapApiData, unwrapApiList } from "../utils/apiResponse";
 
 const { Title, Text } = Typography;
 
@@ -74,18 +75,19 @@ const ClassDetail = () => {
 
       console.log("🔄 Fetching class details...");
 
-      const classRes = await axios.get(`${config.API_URL}/api/classes/${id}`, {
+      const classRes = await apiClient.get(`${config.API_URL}/api/classes/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setClassInfo(classRes.data);
+      setClassInfo(unwrapApiData(classRes.data));
 
-      const studentsRes = await axios.get(`${config.API_URL}/api/classes/${id}/students`, {
+      const studentsRes = await apiClient.get(`${config.API_URL}/api/classes/${id}/students`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { _t: Date.now() },
       });
 
-      console.log("✅ Students fetched:", studentsRes.data.length);
-      setStudents(studentsRes.data);
+      const studentList = unwrapApiList(studentsRes.data);
+      console.log("✅ Students fetched:", studentList.length);
+      setStudents(studentList);
     } catch (err) {
       console.error("❌ Fetch error:", err);
       notification.error({ message: "Failed to fetch class details" });
@@ -109,7 +111,7 @@ const ClassDetail = () => {
       setSubmitting(true);
       const token = localStorage.getItem("token");
 
-      await axios.put(`${config.API_URL}/api/users/${editingStudent.id}`, values, {
+      await apiClient.put(`${config.API_URL}/api/users/${editingStudent.id}`, values, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -129,7 +131,7 @@ const ClassDetail = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.delete(`${config.API_URL}/api/classes/${id}/students/${studentId}`, {
+      await apiClient.delete(`${config.API_URL}/api/classes/${id}/students/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -151,7 +153,7 @@ const ClassDetail = () => {
 
       await Promise.all(
         selectedIds.map((studentId) =>
-          axios.delete(`${config.API_URL}/api/classes/${id}/students/${studentId}`, {
+          apiClient.delete(`${config.API_URL}/api/classes/${id}/students/${studentId}`, {
             headers: { Authorization: `Bearer ${token}` },
           })
         )
@@ -169,12 +171,12 @@ const ClassDetail = () => {
   const openAddModal = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${config.API_URL}/api/users`, {
+      const res = await apiClient.get(`${config.API_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const currentStudentIds = students.map((s) => s.id);
-      const availableUsers = res.data.filter(
+      const availableUsers = unwrapApiList(res.data).filter(
         (user) => !currentStudentIds.includes(user.id)
       );
 
@@ -198,7 +200,7 @@ const ClassDetail = () => {
 
       console.log("📝 Adding students:", selectedToAdd);
 
-      await axios.post(
+      await apiClient.post(
         `${config.API_URL}/api/classes/${id}/students`,
         { studentIds: selectedToAdd },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -231,11 +233,13 @@ const ClassDetail = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${config.API_URL}/api/classes`, {
+      const res = await apiClient.get(`${config.API_URL}/api/classes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setAllClasses(res.data.filter((cls) => cls.id !== parseInt(id)));
+      setAllClasses(
+        unwrapApiList(res.data).filter((cls) => cls.id !== parseInt(id)),
+      );
       setTargetClassId("");
       setMoveModalVisible(true);
     } catch (err) {
@@ -253,7 +257,7 @@ const ClassDetail = () => {
       setSubmitting(true);
       const token = localStorage.getItem("token");
 
-      await axios.post(
+      await apiClient.post(
         `${config.API_URL}/api/classes/move-students`,
         {
           studentIds: selectedIds,

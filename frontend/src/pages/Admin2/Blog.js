@@ -34,9 +34,10 @@ import {
   ReadOutlined,
 } from "@ant-design/icons";
 import { getId } from "../../utils/idHelper";
+import { unwrapApiData, unwrapApiList } from "../../utils/apiResponse";
+import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import "./AdminBlog.css";
-import config from "../../config";
 const { Title, Text, Paragraph } = Typography;
 
 const AdminBlog = () => {
@@ -77,14 +78,8 @@ const AdminBlog = () => {
   const fetchBlogs = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/blog`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch blogs");
-
-      const data = await response.json();
+      const response = await apiClient.get("/api/blog");
+      const data = unwrapApiList(response.data);
 
       setBlogs(data);
       setFilteredBlogs(data);
@@ -101,14 +96,9 @@ const AdminBlog = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${config.API_URL}/api/upload-media`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Upload failed");
-      return data.fileUrl;
+      const response = await apiClient.post("/api/upload-media", formData);
+      const data = unwrapApiData(response.data);
+      return data.url ?? data.fileUrl;
     } catch (err) {
       message.error("Upload failed");
       return null;
@@ -135,11 +125,8 @@ const AdminBlog = () => {
   const handleEdit = async (id) => {
     try {
       setLoading(true);
-      const response = await fetch(`${config.API_URL}/api/blog/${id}`);
-
-      if (!response.ok) throw new Error("Failed to fetch blog");
-
-      const blogData = await response.json();
+      const response = await apiClient.get(`/api/blog/${id}`);
+      const blogData = unwrapApiData(response.data);
 
       setBlogToEdit(blogData);
       setShowModal(true);
@@ -155,16 +142,7 @@ const AdminBlog = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/blog/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Delete failed");
+      await apiClient.delete(`/api/blog/${id}`);
 
       setBlogs((prev) => prev.filter((blog) => getId(blog) !== id));
       message.success("Blog deleted successfully!");
@@ -193,25 +171,10 @@ const AdminBlog = () => {
 
       console.log("📤 Submitting blog:", updatedBlog);
 
-      const url = isEdit
-        ? `${config.API_URL}/api/blog/${editingId}`
-        : `${config.API_URL}/api/blog/create`;
-
-      const method = isEdit ? "PUT" : "POST";
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedBlog),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save blog");
+      if (isEdit) {
+        await apiClient.put(`/api/blog/${editingId}`, updatedBlog);
+      } else {
+        await apiClient.post("/api/blog/create", updatedBlog);
       }
 
       await fetchBlogs();
@@ -227,7 +190,9 @@ const AdminBlog = () => {
       );
     } catch (error) {
       console.error("❌ Submit error:", error);
-      message.error(error.message || "Failed to save blog");
+      message.error(
+        error.response?.data?.message || error.message || "Failed to save blog",
+      );
     } finally {
       setSubmitting(false);
     }

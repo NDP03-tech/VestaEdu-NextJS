@@ -37,9 +37,10 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import { getId } from "../../utils/idHelper";
+import { unwrapApiData, unwrapApiList } from "../../utils/apiResponse";
+import apiClient from "../../services/apiClient";
 import dayjs from "dayjs";
 import "./AdminEvent.css";
-import config from '../../config';
 const { Title, Text } = Typography;
 
 const AdminEvent = () => {
@@ -87,14 +88,8 @@ const AdminEvent = () => {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/events`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch events");
-
-      const data = await response.json();
+      const response = await apiClient.get("/api/events");
+      const data = unwrapApiList(response.data);
 
       setEvents(data);
       setFilteredEvents(data);
@@ -111,14 +106,9 @@ const AdminEvent = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${config.API_URL}/api/upload-media`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Upload failed");
-      return data.fileUrl;
+      const response = await apiClient.post("/api/upload-media", formData);
+      const data = unwrapApiData(response.data);
+      return data.url ?? data.fileUrl;
     } catch (err) {
       message.error("Upload failed");
       return null;
@@ -148,11 +138,8 @@ const AdminEvent = () => {
   const handleEdit = async (id) => {
     try {
       setLoading(true);
-      const response = await fetch(`${config.API_URL}/api/events/${id}`);
-
-      if (!response.ok) throw new Error("Failed to fetch event");
-
-      const eventData = await response.json();
+      const response = await apiClient.get(`/api/events/${id}`);
+      const eventData = unwrapApiData(response.data);
 
       setEventToEdit(eventData);
       setShowModal(true);
@@ -168,16 +155,7 @@ const AdminEvent = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_URL}/api/events/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Delete failed");
+      await apiClient.delete(`/api/events/${id}`);
 
       setEvents((prev) => prev.filter((event) => getId(event) !== id));
       message.success("Event deleted successfully!");
@@ -233,22 +211,10 @@ const AdminEvent = () => {
         createdAt: isEdit ? eventToEdit.createdAt : new Date().toISOString(),
       };
 
-      const url = isEdit ? `${config.API_URL}/api/events/${editingId}` : `${config.API_URL}/api/events/create`;
-      const method = isEdit ? "PUT" : "POST";
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedEvent),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save event");
+      if (isEdit) {
+        await apiClient.put(`/api/events/${editingId}`, updatedEvent);
+      } else {
+        await apiClient.post("/api/events/create", updatedEvent);
       }
 
       await fetchEvents();
@@ -264,7 +230,9 @@ const AdminEvent = () => {
       );
     } catch (error) {
       console.error("❌ Submit error:", error);
-      message.error(error.message || "Failed to save event");
+      message.error(
+        error.response?.data?.message || error.message || "Failed to save event",
+      );
     } finally {
       setSubmitting(false);
     }

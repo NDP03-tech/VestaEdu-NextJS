@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -29,6 +28,8 @@ import {
 } from "@ant-design/icons";
 import { getId } from "../utils/idHelper";
 import config from "../config";
+import apiClient from "../services/apiClient";
+import { unwrapApiData, unwrapApiList } from "../utils/apiResponse";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -48,8 +49,8 @@ const QuizManage = () => {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${config.API_URL}/api/quizzes`);
-      setQuizzes(res.data?.data ?? res.data);
+      const res = await apiClient.get(`${config.API_URL}/api/quizzes`);
+      setQuizzes(unwrapApiList(res.data));
     } catch (err) {
       console.error("❌ Error fetching quizzes", err);
       message.error("Lỗi khi tải danh sách quiz");
@@ -60,8 +61,8 @@ const QuizManage = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${config.API_URL}/api/categories`);
-      setCategories(res.data.map((c) => c.name));
+      const res = await apiClient.get(`${config.API_URL}/api/categories`);
+      setCategories(unwrapApiList(res.data).map((c) => c.name));
     } catch (err) {
       console.error("❌ Error fetching categories", err);
       message.error("Lỗi khi tải danh mục");
@@ -72,30 +73,13 @@ const QuizManage = () => {
   const handleCreateQuiz = async () => {
     setCreating(true);
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`${config.API_URL}/api/quizzes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const res = await apiClient.post("/api/quizzes", {
           title: "Untitled Quiz",
           description: "",
           category: "general",
-        }),
       });
-
-      if (!res.ok) {
-        const error = await res.json();
-        console.error("❌ Error creating quiz:", error);
-        message.error("Failed to create quiz");
-        return;
-      }
-
-      const data = await res.json();
-      const createdQuizId = data.data?.id ?? data.id;
+      const data = unwrapApiData(res.data);
+      const createdQuizId = data.id;
       message.success("Quiz created successfully!");
       navigate(`/admin/quiz-builder/${createdQuizId}`);
     } catch (err) {
@@ -119,7 +103,7 @@ const QuizManage = () => {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await axios.delete(`${config.API_URL}/api/quizzes/${id}`);
+          await apiClient.delete(`${config.API_URL}/api/quizzes/${id}`);
           message.success(
             "Đã xử lý quiz. Quiz có lịch sử làm bài sẽ được lưu trữ thay vì xoá.",
           );
@@ -143,7 +127,7 @@ const QuizManage = () => {
       onOk: async () => {
         try {
           await Promise.all(
-            selectedQuizzes.map((id) => axios.delete(`${config.API_URL}/api/quizzes/${id}`))
+            selectedQuizzes.map((id) => apiClient.delete(`${config.API_URL}/api/quizzes/${id}`))
           );
           message.success(
             "Đã xử lý các quiz. Quiz có lịch sử làm bài sẽ được lưu trữ.",

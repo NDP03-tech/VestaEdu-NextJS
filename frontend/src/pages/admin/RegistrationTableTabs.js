@@ -10,7 +10,8 @@ import {
 import jsPDF from "jspdf";
 import roboto from "../../fonts/Roboto-Regular-normal.js";
 import "jspdf-autotable";
-import config from "../../config.js";
+import apiClient from "../../services/apiClient";
+import { unwrapApiList } from "../../utils/apiResponse";
 
 const isRecent = (dateStr) => {
   const createdAt = new Date(dateStr);
@@ -31,17 +32,8 @@ const RegistrationTableTabs = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${config.API_URL}/api/${type}-registrations`, {
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        message.error(err.message || `Failed to fetch ${type} registrations`);
-        return;
-      }
-
-      const data = await res.json();
+      const res = await apiClient.get(`/api/${type}-registrations`);
+      const data = unwrapApiList(res.data);
 
       type === "event"
         ? setEventRegistrations(data)

@@ -34,9 +34,9 @@ import {
   SafetyOutlined,
   LockOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+import apiClient from "../../services/apiClient";
 import { mapWithKey, getId } from "../../utils/idHelper";
-import config from "../../config";
+import { unwrapApiList } from "../../utils/apiResponse";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -108,7 +108,7 @@ const UserManager = () => {
   const defaultValues = {
     email: "",
     password: "",
-    role: "user",
+    role: "student",
     firstName: "",
     lastName: "",
     studentPhone: "",
@@ -126,18 +126,8 @@ const UserManager = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.get(`${config.API_URL}/api/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log("📦 Users response:", res.data);
-      console.log("📦 Is array:", Array.isArray(res.data));
-
-      setUsers(res.data.data);
+      const res = await apiClient.get("/api/users");
+      setUsers(unwrapApiList(res.data));
     } catch (err) {
       console.error("❌ Error fetching users:", err);
 
@@ -154,20 +144,11 @@ const UserManager = () => {
   const onFinish = async (values) => {
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       if (editingUser) {
-        await axios.put(
-          `${config.API_URL}/api/users/${getId(editingUser)}`,
-          values,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        await apiClient.put(`/api/users/${getId(editingUser)}`, values);
         message.success("User updated successfully!");
       } else {
-        await axios.post(`${config.API_URL}/api/users`, values, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.post("/api/users", values);
         message.success("User created successfully!");
       }
       form.resetFields();
@@ -196,10 +177,7 @@ const UserManager = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${config.API_URL}/api/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiClient.delete(`/api/users/${id}`);
       message.success("User deleted successfully!");
       await fetchUsers();
     } catch (err) {
@@ -233,7 +211,7 @@ const UserManager = () => {
 
   const filteredUsers = users.filter(matchesSearch);
   const adminCount = users.filter((u) => u.role === "admin").length;
-  const userCount = users.filter((u) => u.role === "user").length;
+  const userCount = users.filter((u) => u.role === "student").length;
 
   const getRoleColor = (role) => {
     return role === "admin" ? "red" : "blue";
@@ -548,7 +526,7 @@ const UserManager = () => {
                   name="role"
                   label="User Role"
                   type="select"
-                  options={["user", "admin"]}
+                  options={["student", "teacher", "admin"]}
                 />
               </Col>
             </Row>

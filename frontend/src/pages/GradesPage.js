@@ -21,8 +21,9 @@ import {
   ArrowLeftOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import apiClient from "../services/apiClient";
+import { unwrapApiList } from "../utils/apiResponse";
 import config from "../config";
 const { Title, Text } = Typography;
 
@@ -36,16 +37,13 @@ const GradesPage = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await axios.get(
+        const res = await apiClient.get(
           `${config.API_URL}/api/results/user-best-attempts/${userId}`,
-          {
-            withCredentials: true,
-          },
         );
 
         console.log("📦 Full API response:", res.data);
 
-        const summaries = Array.isArray(res.data) ? res.data : [];
+        const summaries = unwrapApiList(res.data);
 
         // Get user name from first result
         if (summaries.length > 0 && summaries[0].user) {

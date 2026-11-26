@@ -25,12 +25,6 @@ const authenticateToken = (req, res, next) => {
 
   const token = cookieToken || headerToken;
 
-  console.log("=== AUTH DEBUG ===");
-  console.log("Cookie token exists:", !!cookieToken);
-  console.log("Header token exists:", !!headerToken);
-  console.log("Final token exists:", !!token);
-  console.log("Secret exists:", !!process.env.ACCESS_TOKEN_SECRET);
-
   if (!token) {
     return res.status(401).json({
       message: "Token không được cung cấp.",
@@ -38,13 +32,8 @@ const authenticateToken = (req, res, next) => {
   }
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    console.log("=== JWT VERIFY ===");
-    console.log("Error name:", err?.name);
-    console.log("Error message:", err?.message);
-    console.log("Decoded:", decoded);
-
     if (err) {
-      return res.status(403).json({
+      return res.status(401).json({
         message: "Token không hợp lệ.",
       });
     }

@@ -11,7 +11,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import DashboardStatCard from './DashboardStatCard';
 import RegistrationTableTabs from './RegistrationTableTabs';
-import config from '../../config';
+import apiClient from '../../services/apiClient';
+import { unwrapApiData } from '../../utils/apiResponse';
 const { Title, Paragraph } = Typography;
 
 const Dashboard = () => {
@@ -26,20 +27,8 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${config.API_URL}/api/dashboard/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          message.error(err.message || 'Failed to fetch dashboard stats');
-          return;
-        }
-
-        const data = await res.json();
+        const res = await apiClient.get('/api/dashboard/stats');
+        const data = unwrapApiData(res.data);
         setStats(data);
       } catch (err) {
         console.error('❌ Failed to fetch stats:', err);
@@ -52,30 +41,13 @@ const Dashboard = () => {
 
   const handleCreateQuiz = async () => {
     try {
-      const token = localStorage.getItem('token');
-
-      const res = await fetch(`${config.API_URL}/api/quizzes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const res = await apiClient.post('/api/quizzes', {
           title: 'Untitled Quiz',
           description: '',
           category: 'general',
-        }),
       });
-
-      if (!res.ok) {
-        const error = await res.json();
-        console.error('❌ Error creating quiz:', error);
-        return;
-      }
-
-  const data = await res.json();
-  const createdQuizId = data.id;
-  navigate(`/admin/quiz-builder/${createdQuizId}`);
+      const data = unwrapApiData(res.data);
+      navigate(`/admin/quiz-builder/${data.id}`);
     } catch (err) {
       console.error('❌ Network error:', err);
     }
