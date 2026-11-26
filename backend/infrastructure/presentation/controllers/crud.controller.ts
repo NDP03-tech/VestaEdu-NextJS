@@ -1,3 +1,5 @@
+import { serialize } from "./serialize";
+
 export interface HttpRequest {
   body?: unknown;
   params: Record<string, string | undefined>;
@@ -27,15 +29,6 @@ export interface CrudControllerUseCases {
   getById: ExecutableUseCase<string | number>;
   update: UpdateExecutableUseCase;
   remove: ExecutableUseCase<string | number>;
-}
-
-function serialize(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (Array.isArray(value)) return value.map((item) => serialize(item));
-  if (typeof value === "object" && "toJSON" in value) {
-    return (value as { toJSON: () => unknown }).toJSON();
-  }
-  return value;
 }
 
 function statusCodeFor(error: unknown): number {

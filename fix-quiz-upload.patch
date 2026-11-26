@@ -1,0 +1,263 @@
+diff --git a/backend/index.ts b/backend/index.ts
+index 6f73b06..e33bbb7 100644
+--- a/backend/index.ts
++++ b/backend/index.ts
+@@ -422,7 +422,7 @@ async function start(): Promise<void> {
+         if (!uploadMedia.isValidAudioFile(file.mimetype, file.buffer)) {
+           response
+             .status(415)
+-            .json({ message: "Media contents do not match the supported audio type" });
++            .json({ message: "Media contents do not match the supported file type" });
+           return;
+         }
+         if (
+@@ -443,7 +443,12 @@ async function start(): Promise<void> {
+         if (!uploadResult?.secure_url) {
+           throw new Error("Media storage did not return a secure URL");
+         }
+-        response.status(201).json({ data: { url: uploadResult.secure_url } });
++        // FE (Course, Event, Blog, Instructor, TinyMCE...) đọc `fileUrl`,
++        // nên trả cả hai dạng để tương thích.
++        response.status(201).json({
++          data: { url: uploadResult.secure_url },
++          fileUrl: uploadResult.secure_url,
++        });
+       } catch (error) {
+         next(error);
+       }
+diff --git a/backend/middleware/uploadMedia.js b/backend/middleware/uploadMedia.js
+index 28c02cd..7ee5085 100644
+--- a/backend/middleware/uploadMedia.js
++++ b/backend/middleware/uploadMedia.js
+@@ -8,6 +8,10 @@ const allowedMimeTypes = new Set([
+   "audio/x-wav",
+   "audio/aac",
+   "audio/ogg",
++  "image/jpeg",
++  "image/png",
++  "image/gif",
++  "image/webp",
+ ]);
+ 
+ const hasMp3Signature = (buffer) =>
+@@ -25,8 +29,30 @@ const hasAacSignature = (buffer) =>
+ const hasOggSignature = (buffer) =>
+   buffer.length >= 4 && buffer.subarray(0, 4).toString("ascii") === "OggS";
+ 
+-const isValidAudioFile = (mimetype, buffer) => {
++const hasJpegSignature = (buffer) =>
++  buffer.length >= 3 &&
++  buffer[0] === 0xff &&
++  buffer[1] === 0xd8 &&
++  buffer[2] === 0xff;
++const hasPngSignature = (buffer) =>
++  buffer.length >= 8 &&
++  buffer
++    .subarray(0, 8)
++    .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
++const hasGifSignature = (buffer) =>
++  buffer.length >= 6 &&
++  ["GIF87a", "GIF89a"].includes(buffer.subarray(0, 6).toString("ascii"));
++const hasWebpSignature = (buffer) =>
++  buffer.length >= 12 &&
++  buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
++  buffer.subarray(8, 12).toString("ascii") === "WEBP";
++
++const isValidMediaFile = (mimetype, buffer) => {
+   if (!Buffer.isBuffer(buffer) || !allowedMimeTypes.has(mimetype)) return false;
++  if (mimetype === "image/jpeg") return hasJpegSignature(buffer);
++  if (mimetype === "image/png") return hasPngSignature(buffer);
++  if (mimetype === "image/gif") return hasGifSignature(buffer);
++  if (mimetype === "image/webp") return hasWebpSignature(buffer);
+   if (mimetype === "audio/mpeg" || mimetype === "audio/mp3") {
+     return hasMp3Signature(buffer);
+   }
+@@ -74,4 +100,9 @@ const middleware = (request, response, next) => {
+   });
+ };
+ 
+-module.exports = { middleware, isValidAudioFile };
++// isValidAudioFile giữ lại làm alias để không phải sửa chỗ gọi cũ.
++module.exports = {
++  middleware,
++  isValidMediaFile,
++  isValidAudioFile: isValidMediaFile,
++};
+diff --git a/backend/migrations/20261121_add_passing_score_to_quizzes.js b/backend/migrations/20261121_add_passing_score_to_quizzes.js
+new file mode 100644
+index 0000000..176b354
+--- /dev/null
++++ b/backend/migrations/20261121_add_passing_score_to_quizzes.js
+@@ -0,0 +1,26 @@
++"use strict";
++
++module.exports = {
++  up: async (queryInterface, Sequelize) => {
++    await queryInterface.sequelize.transaction(async (transaction) => {
++      await queryInterface.addColumn(
++        "quizzes",
++        "passingScore",
++        {
++          type: Sequelize.INTEGER,
++          allowNull: false,
++          defaultValue: 90,
++        },
++        { transaction },
++      );
++    });
++  },
++
++  down: async (queryInterface) => {
++    await queryInterface.sequelize.transaction(async (transaction) => {
++      await queryInterface.removeColumn("quizzes", "passingScore", {
++        transaction,
++      });
++    });
++  },
++};
+diff --git a/backend/migrations/20261122_sync_schema_with_entities.js b/backend/migrations/20261122_sync_schema_with_entities.js
+new file mode 100644
+index 0000000..c0280ed
+--- /dev/null
++++ b/backend/migrations/20261122_sync_schema_with_entities.js
+@@ -0,0 +1,127 @@
++"use strict";
++
++/**
++ * Đồng bộ schema DB với các TypeORM entity (synchronize = false nên phải
++ * migrate tay). Migration này idempotent: chạy lại nhiều lần không lỗi.
++ *
++ * - questions:       thêm "order", "highlights", "correctAnswer"
++ * - class_students:  thêm id (PK mới), "isActive", "joinedAt" + UNIQUE(class_id, user_id)
++ * - class_quizzes:   thêm id (PK mới), "dueDate", "isActive", "assignedAt" + UNIQUE(class_id, quiz_id)
++ */
++module.exports = {
++  up: async (queryInterface) => {
++    const run = (sql, transaction) =>
++      queryInterface.sequelize.query(sql, { transaction });
++
++    await queryInterface.sequelize.transaction(async (transaction) => {
++      // ---------- questions ----------
++      await run(
++        `ALTER TABLE questions
++           ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0,
++           ADD COLUMN IF NOT EXISTS "highlights" JSONB,
++           ADD COLUMN IF NOT EXISTS "correctAnswer" JSONB`,
++        transaction,
++      );
++
++      // ---------- class_students ----------
++      await run(
++        `ALTER TABLE class_students
++           ADD COLUMN IF NOT EXISTS "id" SERIAL,
++           ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
++           ADD COLUMN IF NOT EXISTS "joinedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
++        transaction,
++      );
++      await run(
++        `UPDATE class_students SET "joinedAt" = "createdAt" WHERE "createdAt" IS NOT NULL`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_students DROP CONSTRAINT IF EXISTS class_students_pkey`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_students ADD PRIMARY KEY ("id")`,
++        transaction,
++      );
++      await run(
++        `DO $$ BEGIN
++           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'class_students_class_id_user_id_key') THEN
++             ALTER TABLE class_students
++               ADD CONSTRAINT class_students_class_id_user_id_key UNIQUE (class_id, user_id);
++           END IF;
++         END $$`,
++        transaction,
++      );
++
++      // ---------- class_quizzes ----------
++      await run(
++        `ALTER TABLE class_quizzes
++           ADD COLUMN IF NOT EXISTS "id" SERIAL,
++           ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP NULL,
++           ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
++           ADD COLUMN IF NOT EXISTS "assignedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
++        transaction,
++      );
++      await run(
++        `UPDATE class_quizzes SET "assignedAt" = "createdAt" WHERE "createdAt" IS NOT NULL`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_quizzes DROP CONSTRAINT IF EXISTS class_quizzes_pkey`,
++        transaction,
++      );
++      await run(`ALTER TABLE class_quizzes ADD PRIMARY KEY ("id")`, transaction);
++      await run(
++        `DO $$ BEGIN
++           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'class_quizzes_class_id_quiz_id_key') THEN
++             ALTER TABLE class_quizzes
++               ADD CONSTRAINT class_quizzes_class_id_quiz_id_key UNIQUE (class_id, quiz_id);
++           END IF;
++         END $$`,
++        transaction,
++      );
++    });
++  },
++
++  down: async (queryInterface) => {
++    const run = (sql, transaction) =>
++      queryInterface.sequelize.query(sql, { transaction });
++
++    await queryInterface.sequelize.transaction(async (transaction) => {
++      await run(
++        `ALTER TABLE class_quizzes
++           DROP CONSTRAINT IF EXISTS class_quizzes_class_id_quiz_id_key,
++           DROP CONSTRAINT IF EXISTS class_quizzes_pkey,
++           DROP COLUMN IF EXISTS "assignedAt",
++           DROP COLUMN IF EXISTS "isActive",
++           DROP COLUMN IF EXISTS "dueDate",
++           DROP COLUMN IF EXISTS "id"`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_quizzes ADD PRIMARY KEY (class_id, quiz_id)`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_students
++           DROP CONSTRAINT IF EXISTS class_students_class_id_user_id_key,
++           DROP CONSTRAINT IF EXISTS class_students_pkey,
++           DROP COLUMN IF EXISTS "joinedAt",
++           DROP COLUMN IF EXISTS "isActive",
++           DROP COLUMN IF EXISTS "id"`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE class_students ADD PRIMARY KEY (class_id, user_id)`,
++        transaction,
++      );
++      await run(
++        `ALTER TABLE questions
++           DROP COLUMN IF EXISTS "correctAnswer",
++           DROP COLUMN IF EXISTS "highlights",
++           DROP COLUMN IF EXISTS "order"`,
++        transaction,
++      );
++    });
++  },
++};
+diff --git a/frontend/nginx.conf b/frontend/nginx.conf
+index b07a9c9..cec9329 100644
+--- a/frontend/nginx.conf
++++ b/frontend/nginx.conf
+@@ -1,6 +1,8 @@
+ server {
+   listen 80;
+   server_name _;
++
++  client_max_body_size 50m;
+   root /usr/share/nginx/html;
+   index index.html;
+ 

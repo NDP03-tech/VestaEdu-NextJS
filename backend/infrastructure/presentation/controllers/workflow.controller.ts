@@ -1,4 +1,5 @@
 import { HttpRequest, HttpResponse, NextFunction } from "./crud.controller";
+import { serialize } from "./serialize";
 
 export type PresentationHandler = (request: HttpRequest) => Promise<unknown>;
 
@@ -24,7 +25,7 @@ export abstract class WorkflowController {
   ): Promise<void> {
     try {
       const result = await this.handlers[name](request);
-      response.status(200).json({ data: result });
+      response.status(200).json({ data: serialize(result) });
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,5 @@
 import { InstructorEntity } from "../../domain/entities";
-
-const Instructor = require("../persistence/Instructor");
+import { Instructor, InstructorStatus } from "../persistence/Instructor";
 
 type InstructorModel = any;
 
@@ -35,7 +34,7 @@ export class InstructorMapper {
     orm.linkedin = instructor.linkedin;
     orm.email = instructor.email;
     orm.phone = instructor.phone;
-    orm.status = instructor.status;
+    orm.status = instructor.status as InstructorStatus;
     orm.createdAt = instructor.createdAt;
     orm.updatedAt = instructor.updatedAt;
     return orm;

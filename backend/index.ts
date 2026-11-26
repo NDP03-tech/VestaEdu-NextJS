@@ -422,7 +422,7 @@ async function start(): Promise<void> {
         if (!uploadMedia.isValidAudioFile(file.mimetype, file.buffer)) {
           response
             .status(415)
-            .json({ message: "Media contents do not match the supported audio type" });
+            .json({ message: "Media contents do not match the supported file type" });
           return;
         }
         if (
@@ -443,8 +443,34 @@ async function start(): Promise<void> {
         if (!uploadResult?.secure_url) {
           throw new Error("Media storage did not return a secure URL");
         }
-        response.status(201).json({ data: { url: uploadResult.secure_url } });
+        // FE (Course, Event, Blog, Instructor, TinyMCE...) đọc `fileUrl`,
+        // nên trả cả hai dạng để tương thích.
+        response.status(201).json({
+          data: { url: uploadResult.secure_url },
+          fileUrl: uploadResult.secure_url,
+        });
       } catch (error) {
+        // Lỗi từ Cloudinary (sai cloud_name / api_key / api_secret, không ra
+        // được internet...) có http_code hoặc code. Trả thông báo rõ ràng thay
+        // vì "Lỗi máy chủ" chung chung để dễ biết cấu hình nào sai.
+        const uploadError = error as {
+          message?: string;
+          http_code?: number;
+          code?: string;
+        };
+        if (uploadError?.http_code || uploadError?.code) {
+          console.error(
+            "Cloudinary upload failed:",
+            uploadError.http_code ?? uploadError.code,
+            uploadError.message,
+          );
+          response.status(502).json({
+            message: `Cloudinary upload failed: ${String(
+              uploadError.message ?? uploadError.code,
+            ).slice(0, 200)}`,
+          });
+          return;
+        }
         next(error);
       }
     },

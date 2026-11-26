@@ -1,42 +1,51 @@
 import { z } from "zod";
 
-export const CreateBlogSchema = z.object({
+/**
+ * Các schema CRUD nội dung (Blog, Category, Course, Event, Instructor) chỉ
+ * kiểm tra trường bắt buộc chính. Phần còn lại (kiểu dữ liệu, URL, email,
+ * trạng thái...) do domain entity tự validate.
+ *
+ * Dùng `.passthrough()` vì validateRequest gán `req.body = schema.parse(...)`:
+ * Zod mặc định XOÁ mọi trường không khai báo, nên nếu liệt kê thiếu thì
+ * trường thật của entity (designation, image, startTime, host...) bị mất
+ * và entity báo "is required".
+ */
+const looseObject = <T extends z.ZodRawShape>(shape: T) =>
+  z.object(shape).passthrough();
+
+export const CreateBlogSchema = looseObject({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
-  author: z.string().optional(),
-  imageUrl: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  isPublished: z.boolean().optional(),
 });
 
-export const UpdateBlogSchema = CreateBlogSchema.partial();
+export const UpdateBlogSchema = looseObject({
+  title: z.string().optional(),
+  content: z.string().optional(),
+});
 
-export const CreateCategorySchema = z.object({
+export const CreateCategorySchema = looseObject({
   name: z.string().min(1, "Category name is required"),
-  description: z.string().optional(),
 });
 
-export const UpdateCategorySchema = CreateCategorySchema.partial();
+export const UpdateCategorySchema = looseObject({
+  name: z.string().optional(),
+});
 
-export const CreateCourseSchema = z.object({
+export const CreateCourseSchema = looseObject({
   name: z.string().min(1, "Course name is required"),
-  description: z.string().optional(),
-  price: z.number().nonnegative().optional(),
-  instructorId: z.number().int().positive().optional(),
-  isActive: z.boolean().optional(),
 });
 
-export const UpdateCourseSchema = CreateCourseSchema.partial();
+export const UpdateCourseSchema = looseObject({
+  name: z.string().optional(),
+});
 
-export const CreateEventSchema = z.object({
+export const CreateEventSchema = looseObject({
   title: z.string().min(1, "Event title is required"),
-  description: z.string().optional(),
-  eventDate: z.string().or(z.date()).optional(),
-  location: z.string().optional(),
-  capacity: z.number().int().positive().optional(),
 });
 
-export const UpdateEventSchema = CreateEventSchema.partial();
+export const UpdateEventSchema = looseObject({
+  title: z.string().optional(),
+});
 
 export const CreateCourseRegistrationSchema = z.object({
   courseId: z.number().int().positive("courseId is required"),
@@ -51,15 +60,13 @@ export const CreateEventRegistrationSchema = z.object({
   phone: z.string().optional(),
 });
 
-export const CreateInstructorSchema = z.object({
+export const CreateInstructorSchema = looseObject({
   name: z.string().min(1, "Instructor name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().optional(),
-  bio: z.string().optional(),
-  specialization: z.string().optional(),
 });
 
-export const UpdateInstructorSchema = CreateInstructorSchema.partial();
+export const UpdateInstructorSchema = looseObject({
+  name: z.string().optional(),
+});
 
 export const LoginSchema = z.object({
   email: z.string().email("Invalid email format"),
